@@ -702,18 +702,6 @@ ${recommendation.nextStep}`;
                   </p>
                   
                   <div className="flex flex-col items-center gap-4 w-full max-w-md mx-auto">
-                    <div className="flex items-center justify-center gap-2 mb-2">
-                      <div className="flex -space-x-2">
-                        {[1, 2, 3, 4].map((i) => (
-                          <div key={i} className="w-8 h-8 rounded-full border-2 border-[#1A1840] bg-gray-300 overflow-hidden">
-                            <img src={`https://i.pravatar.cc/100?img=${i + 10}`} alt="User" className="w-full h-full object-cover" />
-                          </div>
-                        ))}
-                      </div>
-                      <div className="text-sm text-nexus-silver/90 font-medium">
-                        Join <strong className="text-white">10,000+</strong> professionals
-                      </div>
-                    </div>
                     <a 
                       href="https://ailiteracyacademy.org/ai/70/" 
                       target="_blank" 

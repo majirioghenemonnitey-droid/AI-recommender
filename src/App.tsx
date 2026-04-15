@@ -302,21 +302,12 @@ ${recommendation.nextStep}`;
               <Button 
                 onClick={() => {
                   setError(null);
-                  handleGenerateRecommendation();
+                  setCurrentStepIndex(steps.indexOf('lead'));
                 }}
               >
-                Try Again
+                Go Back to Form
               </Button>
             </div>
-            <button 
-              onClick={() => {
-                setError(null);
-                setCurrentStepIndex(steps.indexOf('lead'));
-              }}
-              className="mt-4 text-sm text-gray-500 hover:text-gray-700 font-medium"
-            >
-              Go back to form
-            </button>
           </div>
         </ScreenTransition>
       );
@@ -711,6 +702,18 @@ ${recommendation.nextStep}`;
                   </p>
                   
                   <div className="flex flex-col items-center gap-4 w-full max-w-md mx-auto">
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <div className="flex -space-x-2">
+                        {[1, 2, 3, 4].map((i) => (
+                          <div key={i} className="w-8 h-8 rounded-full border-2 border-[#1A1840] bg-gray-300 overflow-hidden">
+                            <img src={`https://i.pravatar.cc/100?img=${i + 10}`} alt="User" className="w-full h-full object-cover" />
+                          </div>
+                        ))}
+                      </div>
+                      <div className="text-sm text-nexus-silver/90 font-medium">
+                        Join <strong className="text-white">10,000+</strong> professionals
+                      </div>
+                    </div>
                     <a 
                       href="https://ailiteracyacademy.org/ai/70/" 
                       target="_blank" 
@@ -724,7 +727,19 @@ ${recommendation.nextStep}`;
                 </div>
               </div>
               
-              <div className="flex flex-col items-center gap-4 pb-10">
+              {/* Sticky Mobile CTA */}
+              <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-md border-t border-gray-200 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] sm:hidden z-50 flex justify-center">
+                <a 
+                  href="https://ailiteracyacademy.org/ai/70/" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="w-full max-w-md flex items-center justify-center gap-2 bg-nexus-navy text-white py-4 px-6 rounded-xl font-bold text-lg hover:bg-nexus-navy/90 transition-all shadow-lg active:scale-95"
+                >
+                  Master AI Now <ArrowRight className="w-5 h-5" />
+                </a>
+              </div>
+              
+              <div className="flex flex-col items-center gap-4 pb-24 sm:pb-10">
                 <div className="h-px w-12 bg-gray-200" />
                 <p className="text-[10px] text-gray-400 uppercase tracking-widest font-bold">Powered by Majimoni</p>
               </div>

@@ -1,26 +1,34 @@
-import express from "express";
-import { createServer as createViteServer } from "vite";
-import { GoogleGenAI, Type, ThinkingLevel } from "@google/genai";
-import path from "path";
+import { GoogleGenAI, Type } from "@google/genai";
 
-async function startServer() {
-  const app = express();
-  const PORT = 3000;
+export default async function handler(req: any, res: any) {
+  // CORS headers (optional but good practice if calling from other domains, though Vercel handles same-origin automatically)
+  res.setHeader('Access-Control-Allow-Credentials', true);
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
+  );
 
-  app.use(express.json());
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
 
-  // API Route for Gemini Recommendation
-  app.post("/api/recommend", async (req, res) => {
-    try {
-      const apiKey = process.env.GEMINI_API_KEY;
-      if (!apiKey) {
-        return res.status(500).json({ error: "GEMINI_API_KEY is not defined on the server." });
-      }
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method Not Allowed' });
+  }
 
-      const ai = new GoogleGenAI({ apiKey });
-      const data = req.body;
-      
-      const prompt = `
+  try {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({ error: "GEMINI_API_KEY is not defined in Vercel Environment Variables." });
+    }
+
+    const ai = new GoogleGenAI({ apiKey });
+    const data = req.body;
+    
+    const prompt = `
 You are an expert AI consultant representing the AI Literacy Academy. Recommend the best AI tools for this user based STRICTLY on the AI Literacy Academy curriculum and tool cheat sheet provided below. DO NOT use generic knowledge unless the user's problem is completely outside these bounds.
 
 User Profile:
@@ -102,71 +110,49 @@ Instructions:
 6. For the "nextStep", explicitly state that knowing the tool is only the beginning, and they need the AI Literacy Academy to master the actual workflows and strategies.
 `;
 
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: prompt,
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              primaryTool: { type: Type.STRING },
-              whyItFits: { type: Type.STRING },
-              bestUsedFor: {
-                type: Type.ARRAY,
-                items: { type: Type.STRING },
-              },
-              alternativeTools: { 
-                type: Type.ARRAY,
-                items: { type: Type.STRING }
-              },
-              comparisonStrategy: { type: Type.STRING },
-              betterResultsTip: { type: Type.STRING },
-              nextStep: { type: Type.STRING },
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            primaryTool: { type: Type.STRING },
+            whyItFits: { type: Type.STRING },
+            bestUsedFor: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING },
             },
-            required: [
-              "primaryTool",
-              "whyItFits",
-              "bestUsedFor",
-              "alternativeTools",
-              "comparisonStrategy",
-              "betterResultsTip",
-              "nextStep",
-            ],
+            alternativeTools: { 
+              type: Type.ARRAY,
+              items: { type: Type.STRING }
+            },
+            comparisonStrategy: { type: Type.STRING },
+            betterResultsTip: { type: Type.STRING },
+            nextStep: { type: Type.STRING },
           },
+          required: [
+            "primaryTool",
+            "whyItFits",
+            "bestUsedFor",
+            "alternativeTools",
+            "comparisonStrategy",
+            "betterResultsTip",
+            "nextStep",
+          ],
         },
-      });
+      },
+    });
 
-      const text = response.text;
-      if (!text) {
-        throw new Error("No response from AI");
-      }
-
-      res.json(JSON.parse(text));
-    } catch (error: any) {
-      console.error("Gemini API Error:", error);
-      res.status(500).json({ error: error.message || "Internal Server Error" });
+    const text = response.text;
+    if (!text) {
+      throw new Error("No response from AI");
     }
-  });
 
-  // Vite middleware for development
-  if (process.env.NODE_ENV !== "production") {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: "spa",
-    });
-    app.use(vite.middlewares);
-  } else {
-    const distPath = path.join(process.cwd(), "dist");
-    app.use(express.static(distPath));
-    app.get("*", (req, res) => {
-      res.sendFile(path.join(distPath, "index.html"));
-    });
+    res.status(200).json(JSON.parse(text));
+  } catch (error: any) {
+    console.error("Gemini API Error:", error);
+    res.status(500).json({ error: error.message || "Internal Server Error" });
   }
-
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-  });
 }
-
-startServer();

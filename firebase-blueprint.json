@@ -1,0 +1,64 @@
+{
+  "entities": {
+    "Lead": {
+      "title": "Lead",
+      "description": "A user who has completed the AI recommendation flow.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Full name of the lead"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Email address of the lead"
+        },
+        "phone": {
+          "type": "string",
+          "description": "Phone number of the lead"
+        },
+        "role": {
+          "type": "string",
+          "description": "The user's role"
+        },
+        "mainNeed": {
+          "type": "string",
+          "description": "The user's primary challenge"
+        },
+        "contextCreate": {
+          "type": "string",
+          "description": "Specific details about the challenge"
+        },
+        "contextSituation": {
+          "type": "string",
+          "description": "Additional context or constraints"
+        },
+        "toolPreference": {
+          "type": "string",
+          "description": "The user's tool preference"
+        },
+        "recommendation": {
+          "type": "object",
+          "description": "The AI recommendation provided to the user"
+        },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Tags associated with the lead"
+        },
+        "createdAt": {
+          "type": "timestamp",
+          "description": "When the lead was created"
+        }
+      },
+      "required": ["name", "email", "phone", "role", "mainNeed", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/leads/{leadId}": {
+      "schema": "Lead",
+      "description": "Collection of leads generated from the recommender tool"
+    }
+  }
+}

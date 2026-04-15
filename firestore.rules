@@ -1,0 +1,80 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: leads
+    // Document ID: auto-generated
+    // Fields:
+    //   - name: string (required, max 100 chars)
+    //   - email: string (required, valid email)
+    //   - phone: string (required, max 50 chars)
+    //   - role: string (required, max 100 chars)
+    //   - mainNeed: string (required, max 200 chars)
+    //   - contextCreate: string (optional, max 1000 chars)
+    //   - contextSituation: string (optional, max 1000 chars)
+    //   - toolPreference: string (optional, max 100 chars)
+    //   - recommendation: map (optional)
+    //   - tags: list of strings (optional, max 10 items, max 50 chars each)
+    //   - createdAt: timestamp (required)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isValidEmail(email) {
+      return email is string &&
+        email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+    
+    function isValidOptionalString(field, maxLen) {
+      return !('field' in request.resource.data) ||
+             (request.resource.data[field] is string &&
+              request.resource.data[field].size() <= maxLen);
+    }
+
+    function isValidTags(tags) {
+      return !('tags' in request.resource.data) ||
+             (tags is list && tags.size() <= 10);
+    }
+
+    // Domain Validator
+    function isValidLead(data) {
+      return hasRequiredFields(['name', 'email', 'phone', 'role', 'mainNeed', 'createdAt']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.email is string && isValidEmail(data.email) &&
+             data.phone is string && data.phone.size() > 0 && data.phone.size() <= 50 &&
+             data.role is string && data.role.size() > 0 && data.role.size() <= 100 &&
+             data.mainNeed is string && data.mainNeed.size() > 0 && data.mainNeed.size() <= 200 &&
+             isValidOptionalString('contextCreate', 1000) &&
+             isValidOptionalString('contextSituation', 1000) &&
+             isValidOptionalString('toolPreference', 100) &&
+             (!('recommendation' in data) || data.recommendation is map) &&
+             isValidTags(data.tags) &&
+             data.createdAt == request.time;
+    }
+
+    match /leads/{leadId} {
+      // Allow anyone to create a lead (public form submission)
+      allow create: if isValidLead(request.resource.data);
+      
+      // Deny read, update, delete to public (only admins via backend should access this)
+      allow read, update, delete: if false;
+    }
+    
+    // Connection test document
+    match /test/connection {
+      allow read: if true;
+      allow write: if false;
+    }
+  }
+}

@@ -108,7 +108,8 @@ You MUST use the following as your FIRST CHOICE response. Only in extreme or odd
 
 Instructions:
 1. Pick 1 Primary and 1-2 Alternatives strictly from the mapping above based on their specific challenge.
-2. Explain exactly why the primary tool fits their specific role and task. You MUST start this section EXACTLY with the phrase: "Because you said [insert specific detail from user input here], this is why you should do this: " followed by your explanation. Make it feel highly personalized. Keep it concise. DO NOT use phrases like "according to the AI Literacy Academy curriculum". Speak directly as an expert.
+2. If the user identifies as a "complete beginner" or expresses that they don't know where to start, your "nextStep" MUST be an extremely strong recommendation for the AI Literacy Academy.
+3. Explain exactly why the primary tool fits their specific role and task. You MUST start this section EXACTLY with the phrase: "Because you said [insert specific detail from user input here], this is why you should do this: " followed by your explanation. Make it feel highly personalized. Keep it concise. DO NOT use phrases like "according to the AI Literacy Academy curriculum". Speak directly as an expert.
 3. List 3 specific use cases for their daily workflow.
 4. Provide a "comparisonStrategy": Explain that they should take their best prompt, run it in both the primary tool and the alternative tools, and compare the outputs to see which one gives the best response for their specific style.
 5. Give 1 pro tip.

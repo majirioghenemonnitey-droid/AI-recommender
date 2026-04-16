@@ -379,11 +379,11 @@ ${recommendation.nextStep}`;
           ];
         default:
           return [
-            "I'm overwhelmed by customer DMs and repetitive support questions",
-            "Manual operations and admin tasks are eating up my entire day",
-            "I need a system to automatically generate and follow up with leads",
-            "I struggle to consistently create marketing content that actually sells",
-            "I need to analyze my business data but don't have the time or skills",
+            "I'm a complete beginner and I want to learn how AI can help me",
+            "I want to save 2+ hours every day by automating my manual tasks",
+            "I want to use AI to grow my income or start a new side hustle",
+            "I need to create professional content (text, images, video) faster",
+            "I want to stay ahead of the curve and master AI before everyone else",
             "Other"
           ];
       }

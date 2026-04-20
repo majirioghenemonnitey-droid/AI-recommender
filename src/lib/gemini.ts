@@ -111,7 +111,7 @@ Instructions:
 - List 3 distinct, high-impact use cases that prove you "think deeply" about their specific business.
 - Provide a "comparisonStrategy": Suggest a specific "prompt-off" test between tools.
 - 1 high-yield pro tip unique to the recommendation.
-- Next Step: Direct them to "Tracy's Book/PDF" for implementation mastery.
+- Next Step: You must provide a high-conversion call to action. Tell them: "Knowing the tool is only 10% of the battle. To master the exact workflows and advanced prompts that turn this tool into a money-maker, join the **AI Literacy Academy**. That is where we show you the 90% most people miss."
 `;
 
   try {

@@ -146,23 +146,26 @@ export default function App() {
       }, 100);
       setCurrentStepIndex(steps.indexOf('result'));
 
-      // Fire-and-forget: Save to Serlzo in the background
+      // Fire-and-forget: Save to Serlzo via our server proxy
       const serlzoPayload = {
         name: leadName,
         email: leadEmail,
         phone: leadPhone,
-        listId: "69dcf75efa683a8aebdf37c6",
-        formId: "69dcf7c9fa683a8aebdf3ca7",
-        tags: ["new_lead"]
+        recommendation: result,
+        metadata: {
+          role,
+          mainNeed,
+          contextCreate
+        }
       };
       
-      fetch("https://cdn.serlzo.com/form/create-lead/", {
+      fetch("/api/serlzo", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(serlzoPayload)
       }).then(res => res.json())
-        .then(data => console.log("Serlzo Response:", data))
-        .catch(err => console.error("Error saving to Serlzo:", err));
+        .then(data => console.log("Serlzo Proxy Response:", data))
+        .catch(err => console.error("Error saving to Serlzo via Proxy:", err));
 
       // Fire-and-forget: Save to Firebase in the background
       addDoc(collection(db, "leads"), {
@@ -586,15 +589,19 @@ ${recommendation.nextStep}`;
         return (
           <ScreenTransition keyId="result">
             <div className="w-full max-w-3xl px-4 sm:px-0 text-left">
-              <div className="mb-8 flex justify-center">
+              <div className="mb-8 flex flex-col items-center justify-center">
                 <motion.div 
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ type: "spring", stiffness: 260, damping: 20 }}
-                  className="w-20 h-20 bg-nexus-navy rounded-full flex items-center justify-center shadow-xl shadow-nexus-navy/30"
+                  className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center shadow-xl shadow-green-500/30 mb-4"
                 >
                   <CheckCircle2 className="w-10 h-10 text-white" />
                 </motion.div>
+                <div className="text-center">
+                  <h2 className="text-xl font-bold text-nexus-navy">Form Submitted!</h2>
+                  <p className="text-sm text-gray-500 italic">Check your email ({leadEmail}) and WhatsApp for your copy.</p>
+                </div>
               </div>
               
               <h1 className="text-3xl sm:text-4xl font-bold text-nexus-navy mb-4 tracking-tight leading-tight text-center font-display">

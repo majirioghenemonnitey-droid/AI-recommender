@@ -8,6 +8,16 @@
     <title>AI Recommender - AI Literacy Academy</title>
   </head>
   <body>
+    <script>
+      window.onerror = function(msg, url, lineNo, columnNo, error) {
+        console.error('Window Error:', msg, url, lineNo, columnNo, error);
+        // Do not show alert in production for users, but helpful for debugging right now
+        if (window.location.hostname === 'localhost' || window.location.hostname.includes('ais-dev')) {
+           // alert('Debug: JS Error - ' + msg);
+        }
+        return false;
+      };
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

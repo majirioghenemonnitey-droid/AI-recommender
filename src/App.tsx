@@ -148,7 +148,7 @@ export default function App() {
 
       // Fire-and-forget: Save to Serlzo in the background
       const serlzoPayload = {
-        fullName: leadName,
+        name: leadName,
         email: leadEmail,
         phone: leadPhone,
         listId: "69dcf75efa683a8aebdf37c6",
@@ -543,8 +543,8 @@ ${recommendation.nextStep}`;
             </div>
             <div className="w-full max-w-md flex flex-col gap-6 mb-8">
               <TextInput
-                label="Full Name"
-                placeholder="e.g., Jane Doe"
+                label="Name"
+                placeholder="e.g., Jane"
                 value={leadName}
                 onChange={setLeadName}
               />

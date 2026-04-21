@@ -187,11 +187,16 @@ export default function App() {
       // 4. Capture Leads (Always attempt this)
       console.log("Capturing lead data to Serlzo...");
       
+      // Sanitizing inputs to prevent "string did not match pattern" errors
+      const safeName = String(leadName || "").trim();
+      const safeEmail = String(leadEmail || "").trim().toLowerCase();
+      const safePhone = String(leadPhone || "").trim();
+
       const serlzoPayload = {
-        fullName: leadName.trim(),
-        name: leadName.trim(),
-        email: leadEmail.trim().toLowerCase(),
-        phone: leadPhone.trim(),
+        fullName: safeName,
+        name: safeName,
+        email: safeEmail,
+        phone: safePhone,
         listId: "69dcf75efa683a8aebdf37c6",
         formId: "69dcf7c9fa683a8aebdf3ca7",
         triggerAutomation: true,

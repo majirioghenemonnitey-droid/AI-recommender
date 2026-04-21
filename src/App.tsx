@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Sparkles, ArrowRight, CheckCircle2, ChevronRight, BrainCircuit, ChevronLeft, Info, Download } from 'lucide-react';
 import PhoneInput, { isValidPhoneNumber } from 'react-phone-number-input';
@@ -48,6 +48,7 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
 type StepId = 'landing' | 'lead' | 'role' | 'need' | 'context' | 'result';
 
 export default function App() {
+  const serlzoFormRef = useRef<HTMLFormElement>(null);
   const [role, setRole] = useState('');
   const [mainNeed, setMainNeed] = useState('');
   
@@ -139,35 +140,22 @@ export default function App() {
       });
       console.log("AI Recommendation generated:", result);
 
-      // IMMEDIATELY show the success screen so the user doesn't wait
-      setRecommendation(result);
-      setTimeout(() => {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }, 100);
-      setCurrentStepIndex(steps.indexOf('result'));
-
-      // Fire-and-forget: Save to Serlzo via our server proxy
-      const serlzoPayload = {
-        name: leadName,
-        email: leadEmail,
-        phone: leadPhone,
-        recommendation: result,
-        metadata: {
-          role,
-          mainNeed,
-          contextCreate
+      // --- SILENT SERLZO SUBMISSION (Bypasses CORS/API logic) ---
+      if (serlzoFormRef.current) {
+        try {
+          const form = serlzoFormRef.current;
+          (form.elements.namedItem('fullName') as HTMLInputElement).value = leadName;
+          (form.elements.namedItem('email') as HTMLInputElement).value = leadEmail;
+          (form.elements.namedItem('phone') as HTMLInputElement).value = leadPhone;
+          
+          console.log("🚀 TRIGGERING SILENT SERLZO SYNC...");
+          form.submit();
+        } catch (err) {
+          console.warn("Silent Serlzo Sync Issue:", err);
         }
-      };
-      
-      fetch("/api/serlzo", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(serlzoPayload)
-      }).then(res => res.json())
-        .then(data => console.log("Serlzo Proxy Response:", data))
-        .catch(err => console.error("Error saving to Serlzo via Proxy:", err));
+      }
 
-      // Fire-and-forget: Save to Firebase in the background
+      // Save to Firebase in the background
       addDoc(collection(db, "leads"), {
         name: leadName,
         email: leadEmail,
@@ -178,10 +166,16 @@ export default function App() {
         contextSituation,
         toolPreference,
         recommendation: result,
-        tags: ["new_lead"],
+        tags: ["new_lead", "serlzo_integrated"],
         createdAt: serverTimestamp()
-      }).then(() => console.log("Lead saved to Firebase successfully!"))
-        .catch(err => handleFirestoreError(err, OperationType.CREATE, "leads"));
+      }).catch(err => console.error("Firebase lead save error:", err));
+
+      // NOW show the success screen
+      setRecommendation(result);
+      setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 100);
+      setCurrentStepIndex(steps.indexOf('result'));
 
     } catch (error) {
       console.error("CRITICAL ERROR in handleGenerateRecommendation:", error);
@@ -745,6 +739,7 @@ ${recommendation.nextStep}`;
   };
 
   return (
+    <>
     <div className="min-h-screen bg-nexus-bg font-sans selection:bg-nexus-cobalt/20 selection:text-nexus-navy">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 md:py-12 flex flex-col min-h-screen">
         
@@ -786,6 +781,27 @@ ${recommendation.nextStep}`;
         
       </div>
     </div>
-  );
+    
+    {/* SILENT SERLZO BRIDGE: Submits via hidden iframe to trigger automations without redirect */}
+    <div id="serlzo-form-container" style={{ display: 'none' }}></div>
+    <form 
+      ref={serlzoFormRef} 
+      action="https://cdn.serlzo.com/form/create-lead/" 
+      method="POST" 
+      target="serlzo_hidden_iframe" 
+      style={{ display: 'none' }}
+    >
+      <input type="hidden" name="formId" value="69dcf7c9fa683a8aebdf3ca7" />
+      <input type="hidden" name="fullName" />
+      <input type="hidden" name="email" />
+      <input type="hidden" name="phone" />
+      {/* Compatibility aliases */}
+      <input type="hidden" name="full_name" />
+      <input type="hidden" name="user_email" />
+      <input type="hidden" name="subscribe" value="true" />
+    </form>
+    <iframe name="serlzo_hidden_iframe" title="Serlzo Bridge" style={{ display: 'none' }}></iframe>
+  </>
+);
 }
 

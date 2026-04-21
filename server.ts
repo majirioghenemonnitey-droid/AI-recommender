@@ -15,74 +15,19 @@ async function startServer() {
     res.json({ status: "ok", env: process.env.NODE_ENV });
   });
   
-  // API Route for Serlzo Forwarding (Solves CORS and handles reliability)
-  app.post("/api/serlzo", async (req, res) => {
-    try {
-      const { name, email, phone, recommendation, metadata } = req.body;
-      
-      const resultText = recommendation ? 
-        `PRIMARY TOOL: ${recommendation.primaryTool}\nWHY: ${recommendation.whyItFits}\nNEXT STEP: ${recommendation.nextStep}` : 
-        "No recommendation generated yet.";
-
-      const serlzoPayload = {
-        // Double-mapping names to cover all API variations
-        name: name,
-        fullName: name,
-        full_name: name,
-        
-        email: email,
-        
-        phone: phone,
-        phoneNumber: phone,
-        phone_number: phone,
-        
-        listId: "69dcf75efa683a8aebdf37c6",
-        list_id: "69dcf75efa683a8aebdf37c6",
-        
-        formId: "69dcf7c9fa683a8aebdf3ca7",
-        form_id: "69dcf7c9fa683a8aebdf3ca7",
-        
-        tags: ["recommender_lead"],
-        
-        // Some APIs expect metadata, some expect meta_data
-        metadata: {
-          ...metadata,
-          ai_recommendation: resultText,
-          source: "AI Recommender App"
-        },
-        meta_data: {
-          ...metadata,
-          ai_recommendation: resultText,
-          source: "AI Recommender App"
-        }
-      };
-
-      console.log("Attempting Serlzo payload:", JSON.stringify(serlzoPayload));
-
-      const serlzoResponse = await fetch("https://cdn.serlzo.com/form/create-lead/", {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "Accept": "application/json"
-        },
-        body: JSON.stringify(serlzoPayload)
-      });
-
-      const data = await serlzoResponse.json();
-      res.status(serlzoResponse.status).json(data);
-    } catch (error: any) {
-      console.error("Serlzo Proxy Error:", error);
-      res.status(500).json({ error: error.message });
-    }
-  });
-
   // API Route for Gemini Recommendation (Server-side for security and reliability)
   app.post("/api/recommend", async (req, res) => {
     try {
-      const apiKey = process.env.GEMINI_API_KEY;
-      if (!apiKey) {
-        return res.status(500).json({ error: "GEMINI_API_KEY is not defined." });
+      // Priority: 1. Environment Secret, 2. Hardcoded fallback
+      let apiKey = process.env.GEMINI_API_KEY;
+      
+      const hardcodedKey = "AIzaSyBd6aPnub2v_-CT6CIc2-2vPlm89qeBb_Q";
+
+      if (!apiKey || apiKey.trim() === "" || apiKey === "MY_GEMINI_API_KEY") {
+        apiKey = hardcodedKey;
       }
+
+      console.log(`🤖 Gemini API request received. Key ends in: ...${apiKey.slice(-4)}`);
 
       const { GoogleGenAI, Type } = await import("@google/genai");
       const ai = new GoogleGenAI({ apiKey });
@@ -176,7 +121,9 @@ Instructions:
   }
 
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`🚀 PRODUCTION SERVER STARTED`);
+    console.log(`🔗 Listening on http://0.0.0.0:${PORT}`);
+    console.log(`📂 Serving static files from: ${path.join(process.cwd(), "dist")}`);
   });
 }
 

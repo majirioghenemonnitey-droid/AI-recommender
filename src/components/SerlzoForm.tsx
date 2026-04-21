@@ -8,23 +8,30 @@ export function SerlzoForm({ formId }: SerlzoFormProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // We only want to inject the script once into this container
-    if (containerRef.current && !containerRef.current.querySelector('script')) {
-      const script = document.createElement('script');
-      script.src = "https://cdn.serlzo.com/public/formv2/htmlform/htmlform.min.js";
-      script.async = true;
-      script.setAttribute('serlzo-form-id', formId);
-      
-      // Clear the loading message before injecting
-      containerRef.current.innerHTML = '';
-      
-      // The Serlzo script expects a div with this specific ID to exist in the DOM
-      // Since we are using React, we must ensure it's there
-      const formTarget = document.createElement('div');
-      formTarget.id = 'serlzo-form-container';
-      containerRef.current.appendChild(formTarget);
-      containerRef.current.appendChild(script);
-    }
+    const container = containerRef.current;
+    if (!container) return;
+
+    // Clear previous content
+    container.innerHTML = '';
+    
+    // Create the target div that the Serlzo script specifically looks for
+    const formTarget = document.createElement('div');
+    formTarget.id = 'serlzo-form-container';
+    container.appendChild(formTarget);
+
+    // Create and inject the script
+    const script = document.createElement('script');
+    script.src = "https://cdn.serlzo.com/public/formv2/htmlform/htmlform.min.js";
+    script.async = true;
+    script.setAttribute('serlzo-form-id', formId);
+    container.appendChild(script);
+
+    return () => {
+      // Cleanup cleanup: remove the script if the component unmounts
+      if (container) {
+        container.innerHTML = '';
+      }
+    };
   }, [formId]);
 
   return (

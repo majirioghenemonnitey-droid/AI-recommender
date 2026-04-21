@@ -72,36 +72,73 @@ export default function App() {
   const steps: StepId[] = ['landing', 'role', 'need', 'context', 'lead', 'result'];
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
 
-  // Persistence: Load from localStorage on mount
+  // Consolidated Initialization: Handle persistence and URL params
   useEffect(() => {
-    const savedRole = localStorage.getItem('nexus_role');
-    const savedNeed = localStorage.getItem('nexus_mainNeed');
-    const savedContextCreate = localStorage.getItem('nexus_contextCreate');
-    const savedContextSituation = localStorage.getItem('nexus_contextSituation');
-    const savedToolPreference = localStorage.getItem('nexus_toolPreference');
-    const savedStep = localStorage.getItem('nexus_step');
+    // 1. Load basic persistent data
+    const savedRole = localStorage.getItem('nexus_role') || '';
+    const savedNeed = localStorage.getItem('nexus_mainNeed') || '';
+    const savedContextCreate = localStorage.getItem('nexus_contextCreate') || '';
+    const savedContextSituation = localStorage.getItem('nexus_contextSituation') || '';
+    const savedToolPreference = localStorage.getItem('nexus_toolPreference') || '';
+    const savedStep = localStorage.getItem('nexus_step') || 'landing';
 
+    // Apply to state
     if (savedRole) setRole(savedRole);
     if (savedNeed) setMainNeed(savedNeed);
     if (savedContextCreate) setContextCreate(savedContextCreate);
     if (savedContextSituation) setContextSituation(savedContextSituation);
     if (savedToolPreference) setToolPreference(savedToolPreference);
-    
-    // If we have lead info in URL, we want to try to go to results
+
+    // 2. Extract Lead Info from URL
     const params = new URLSearchParams(window.location.search);
-    const hasLead = params.get('email') || params.get('fullName') || params.get('phone');
-    
-    if (hasLead && savedRole && savedNeed) {
-      // Don't set step index yet, wait for lead info to be processed by other useEffect
-    } else if (savedStep) {
+    const urlName = params.get('name') || params.get('fullName') || '';
+    const urlEmail = params.get('email') || '';
+    const urlPhone = params.get('phone') || '';
+
+    if (urlName) setLeadName(urlName);
+    if (urlEmail) setLeadEmail(urlEmail);
+    if (urlPhone) setLeadPhone(urlPhone);
+
+    const hasAnyLeadData = urlName || urlEmail || urlPhone;
+
+    // 3. Determine Starting Step
+    if (hasAnyLeadData && savedRole && savedNeed) {
+      // If we have lead info AND critical diagnostic data, trigger results
+      console.log("Lead info detected in URL. Jumping to results generation.");
+      
+      // Use the local variables directly to avoid waiting for state updates
+      const triggerRec = async () => {
+        setIsLoading(true);
+        try {
+          const result = await getRecommendation({
+            role: savedRole,
+            mainNeed: savedNeed,
+            contextCreate: savedContextCreate,
+            contextSituation: savedContextSituation,
+            toolPreference: savedToolPreference
+          });
+          setRecommendation(result);
+          setCurrentStepIndex(steps.indexOf('result'));
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        } catch (err) {
+          console.error("Auto-generation failed:", err);
+          setError(err instanceof Error ? err.message : "Failed to load results.");
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      
+      triggerRec();
+    } else if (savedStep && savedStep !== 'result') {
+      // Otherwise, resume from the last step
       const stepIdx = steps.indexOf(savedStep as StepId);
-      if (stepIdx !== -1 && stepIdx !== steps.indexOf('result')) {
+      if (stepIdx !== -1) {
         setCurrentStepIndex(stepIdx);
       }
     }
-  }, []);
+  }, []); // Run ONLY once on mount
 
-  // Save to localStorage when state changes
+  // Save state changes as they happen
   useEffect(() => {
     if (role) localStorage.setItem('nexus_role', role);
     if (mainNeed) localStorage.setItem('nexus_mainNeed', mainNeed);
@@ -110,31 +147,10 @@ export default function App() {
     if (toolPreference) localStorage.setItem('nexus_toolPreference', toolPreference);
     
     const step = steps[currentStepIndex];
-    if (step !== 'result') {
+    if (step && step !== 'result' && step !== 'landing') {
       localStorage.setItem('nexus_step', step);
     }
   }, [role, mainNeed, contextCreate, contextSituation, toolPreference, currentStepIndex]);
-
-  // Auto-fill from URL parameters (for Serlzo redirects)
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const name = params.get('name') || params.get('fullName');
-    const email = params.get('email');
-    const phone = params.get('phone');
-    
-    if (name) setLeadName(name);
-    if (email) setLeadEmail(email);
-    if (phone) setLeadPhone(phone);
-
-    // If we have all lead info and we are at a step before result, trigger recommendation
-    if ((name || email || phone) && currentStepIndex < steps.indexOf('result')) {
-      // Small delay to ensure state and logic are ready
-      const timer = setTimeout(() => {
-        handleGenerateRecommendation();
-      }, 500);
-      return () => clearTimeout(timer);
-    }
-  }, [currentStepIndex]);
 
   const currentStep = steps[currentStepIndex];
 

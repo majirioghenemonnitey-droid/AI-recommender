@@ -8,6 +8,9 @@ export default defineConfig(({mode}) => {
   console.log("VITE CONFIG GEMINI KEY:", !!process.env.GEMINI_API_KEY, !!env.GEMINI_API_KEY);
   return {
     plugins: [react(), tailwindcss()],
+    define: {
+      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
+    },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),

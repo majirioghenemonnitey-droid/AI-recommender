@@ -145,81 +145,112 @@ export default function App() {
     setIsLoading(true);
     setError(null);
 
-    // Hard 10-second deadline for the WHOLE process
-    const overallTimeout = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error("TIMED_OUT")), 9500)
-    );
-
     try {
-      const processPromise = (async () => {
-        // 1. Execute reCAPTCHA (Priority 1)
-        let token = "";
-        try {
-          if (executeRecaptcha) {
-            token = await executeRecaptcha('recommendation_request');
-          }
-        } catch (err) {
-          console.warn("reCAPTCHA component error:", err);
+      // 1. Execute reCAPTCHA
+      let token = "";
+      try {
+        if (executeRecaptcha) {
+          token = await executeRecaptcha('recommendation_request');
         }
-        
-        // 2. Prepare Lead data
-        const safeName = String(leadName || "").trim();
-        const safeEmail = String(leadEmail || "").trim().toLowerCase();
-        const safePhone = String(leadPhone || "").trim();
+      } catch (err) {
+        console.warn("reCAPTCHA component error:", err);
+      }
+      
+      // 2. Verify reCAPTCHA on the server (Safe for Vercel/Static)
+      if (token) {
+        try {
+          const verifyRes = await fetch("/api/verify-captcha", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token })
+          });
+          
+          if (verifyRes.ok) {
+            const verifyData = await verifyRes.json();
+            if (!verifyData.success) {
+              console.error("reCAPTCHA Failed:", verifyData);
+              const codes = verifyData.error_codes ? ` (Codes: ${verifyData.error_codes.join(', ')})` : "";
+              throw new Error(`Security check failed${codes}.`);
+            }
+          } else {
+            console.warn("reCAPTCHA backend unavailable (Vercel). Skipping verification.");
+          }
+        } catch (backendErr) {
+          console.warn("Could not reach reCAPTCHA backend. Running in standalone mode.");
+        }
+      }
 
-        // 3. Start Lead Capture IMMEDIATELY (Background)
-        const serlzoPayload = {
-          fullName: safeName, name: safeName, 
-          email: safeEmail, phone: safePhone,
-          listId: "69dcf75efa683a8aebdf37c6",
-          formId: "69dcf7c9fa683a8aebdf3ca7",
-          triggerAutomation: true, trigger_automation: true,
-          event: "form_submission",
-          tags: ["webform", "ai_recommender"]
-        };
+      console.log("Starting parallel lead capture and AI generation...");
 
-        const captureToSerlzo = fetch("https://cdn.serlzo.com/form/create-lead/", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(serlzoPayload)
-        }).catch(err => console.error("Serlzo Background Error:", err));
+      // 3. Prepare Lead Capture Data
+      const safeName = String(leadName || "").trim();
+      const safeEmail = String(leadEmail || "").trim().toLowerCase();
+      const safePhone = String(leadPhone || "").trim();
 
-        const captureToFirebasePromise = addDoc(collection(db, "leads"), {
-          name: leadName, email: leadEmail, phone: leadPhone,
-          role, mainNeed, contextCreate, contextSituation, toolPreference,
-          status: "captured", createdAt: serverTimestamp()
-        }).catch(err => console.error("Firebase Background Error:", err));
+      const serlzoPayload = {
+        fullName: safeName,
+        name: safeName,
+        email: safeEmail,
+        phone: safePhone,
+        listId: "69dcf75efa683a8aebdf37c6",
+        formId: "69dcf7c9fa683a8aebdf3ca7",
+        triggerAutomation: true,
+        trigger_automation: true,
+        event: "form_submission",
+        tags: ["webform", "ai_recommender"]
+      };
 
-        // 4. Fire reCAPTCHA verify and AI in parallel
-        const verifyPromise = token ? fetch("/api/verify-captcha", {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token })
-        }).then(r => r.ok ? r.json() : { success: true }) : Promise.resolve({ success: true });
+      // 4. Start Lead Capture IMMEDIATELY (Do not await yet)
+      const captureToSerlzo = fetch("https://cdn.serlzo.com/form/create-lead/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(serlzoPayload)
+      }).then(res => res.text())
+        .catch(err => console.error("Serlzo Error:", err));
 
-        const aiPromise = getRecommendation({
-          role, mainNeed, contextCreate, contextSituation, toolPreference
-        });
+      const captureToFirebasePromise = addDoc(collection(db, "leads"), {
+        name: leadName,
+        email: leadEmail,
+        phone: leadPhone,
+        role,
+        mainNeed,
+        contextCreate,
+        contextSituation,
+        toolPreference,
+        status: "pending_ai",
+        createdAt: serverTimestamp()
+      }).catch(err => console.error("Firebase Error:", err));
 
-        // 5. Wait for basic verification and AI result
-        const [verifyData, result] = await Promise.all([verifyPromise, aiPromise]);
-        
-        return result;
-      })();
+      // 5. Start AI Generation (This is the PRIORITY)
+      const recommendationPromise = getRecommendation({
+        role,
+        mainNeed,
+        contextCreate,
+        contextSituation,
+        toolPreference
+      });
 
-      // RACE against the 10s clock
-      const result = await Promise.race([processPromise, overallTimeout]) as RecommendationResult;
-
+      // 6. Race to show results. We wait for AI, but let leads run in background.
+      // However, we want to give leads a 3-second head start to finish, then proceed regardless.
+      const timeoutPromise = new Promise(resolve => setTimeout(resolve, 3000, 'timeout'));
+      
+      const result = await recommendationPromise;
       setRecommendation(result);
+
+      // If we got the result, we check if leads are still hanging.
+      // We don't want to block the user beyond this point.
+      console.log("AI Result ready. Moving to results screen...");
+
+      // 7. Finalize UI
       setCurrentStepIndex(steps.indexOf('result'));
       window.scrollTo({ top: 0, behavior: 'smooth' });
 
+      // Note: captureToSerlzo and captureToFirebasePromise are still running in the background.
+      // They will eventually resolve/reject without blocking the user.
+
     } catch (error: any) {
-      if (error.message === "TIMED_OUT") {
-        setError("Our AI is taking longer than expected. We've saved your info and sent your AI strategy to your email! (Check your inbox shortly).");
-      } else {
-        console.error("Process Error:", error);
-        setError("Something went wrong. Don't worry, your details are saved—check your email for your AI strategy!");
-      }
+      console.error("Process Error:", error);
+      setError(error.message);
     } finally {
       setIsLoading(false);
     }
@@ -272,7 +303,8 @@ export default function App() {
       "remove.bg": "https://www.remove.bg/",
       "lalal.ai": "https://www.lalal.ai/",
       "fireflies.ai": "https://fireflies.ai/",
-      "otter.ai": "https://otter.ai/"
+      "otter.ai": "https://otter.ai/",
+      "ai literacy academy": "https://ailiteracyacademy.org/ai/70/"
     };
 
     for (const [key, url] of Object.entries(toolUrls)) {
@@ -416,10 +448,10 @@ ${recommendation.nextStep}`;
           ];
         default:
           return [
-            "I'm a complete beginner and I want to learn how AI can help me",
+            "I'm a complete beginner and don't know how to use AI yet",
+            "I want to make money with AI and discover new monetization strategies",
+            "I need a step-by-step roadmap to start my AI journey today",
             "I want to save 2+ hours every day by automating my manual tasks",
-            "I want to use AI to grow my income or start a new side hustle",
-            "I need to create professional content (text, images, video) faster",
             "I want to stay ahead of the curve and master AI before everyone else",
             "Other"
           ];

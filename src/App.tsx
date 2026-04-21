@@ -369,15 +369,23 @@ ${recommendation.nextStep}`;
             </div>
             <h2 className="text-2xl font-bold text-nexus-navy mb-3">Something went wrong</h2>
             <p className="text-gray-600 mb-8">{error}</p>
-            <div className="w-full">
+            <div className="w-full flex flex-col gap-3">
               <Button 
                 onClick={() => {
                   setError(null);
                   setCurrentStepIndex(steps.indexOf('lead'));
                 }}
               >
-                Go Back to Form
+                Try Again
               </Button>
+              <a 
+                href="https://ailiteracyacademy.org/ai/70/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-4 px-6 rounded-xl font-bold text-lg bg-nexus-navy text-white text-center hover:bg-nexus-navy/90 transition-all flex items-center justify-center gap-2"
+              >
+                Skip & Join Academy <ArrowRight className="w-5 h-5" />
+              </a>
             </div>
           </div>
         </ScreenTransition>
@@ -853,6 +861,13 @@ ${recommendation.nextStep}`;
             {renderScreen()}
           </AnimatePresence>
         </main>
+
+        <footer className="w-full py-8 text-center border-t border-nexus-silver/30 mt-auto">
+          <div className="text-nexus-silver text-[10px] font-bold tracking-widest uppercase opacity-50 mb-1">
+            System Identity: V2.1.0-STABLE
+          </div>
+          <p className="text-gray-400 text-xs">AI Literacy Academy &copy; 2026. All strategies are AI-curated.</p>
+        </footer>
         
       </div>
     </div>

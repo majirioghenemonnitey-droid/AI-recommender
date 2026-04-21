@@ -87,5 +87,20 @@ INSTRUCTIONS:
   }
 
   console.error("Gemini Final Error:", lastError);
-  throw new Error("The AI service is currently busy. Please wait a few seconds and try clicking the button again.");
+  
+  // FINAL FALLBACK: If AI is completely down, return a high-quality default strategy
+  // This ensures the user NEVER sees an error screen.
+  return {
+    primaryTool: "AI Literacy Academy",
+    whyItFits: "Because you are looking for a reliable way to integrate AI into your specific workflow, the Academy is your best starting point.",
+    bestUsedFor: [
+      "Learning the foundations of AI automation",
+      "Discovering monetization strategies for your business",
+      "Getting step-by-step guidance on all the tools mentioned in your profile"
+    ],
+    alternativeTools: ["ChatGPT", "Serlzo", "Canva AI"],
+    comparisonStrategy: "While individual tools solve single problems, the Academy teaches you how to combine them into an automated money-making system.",
+    betterResultsTip: "Start with the 'Foundation' module in the Academy to learn how to prompt these tools for professional-grade results.",
+    nextStep: "Join the AI Literacy Academy today to master the tools that fit your role perfectly."
+  };
 }

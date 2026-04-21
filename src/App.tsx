@@ -166,48 +166,48 @@ export default function App() {
 
       console.log("Starting lead capture and recommendation generation...");
 
-      // 3. Generate Recommendation FIRST so we can send results to Serlzo
-      console.log("Calling getRecommendation with data:", { role, mainNeed, contextCreate, contextSituation, toolPreference });
-      const result = await getRecommendation({
-        role,
-        mainNeed,
-        contextCreate,
-        contextSituation,
-        toolPreference
-      });
-      
-      console.log("AI Recommendation successfully received:", result);
-      
-      if (!result || !result.primaryTool) {
-        console.error("AI returned an empty or invalid result:", result);
-        throw new Error("The AI returned an invalid response. Please try again with more details.");
+      // 3. Generate Recommendation (Run in background or before UI change)
+      console.log("Generating recommendation...");
+      let result = null;
+      try {
+        result = await getRecommendation({
+          role,
+          mainNeed,
+          contextCreate,
+          contextSituation,
+          toolPreference
+        });
+        console.log("AI Recommendation received:", result);
+        setRecommendation(result);
+      } catch (aiError: any) {
+        console.error("AI Error tracked but continuing to lead capture:", aiError);
+        // We catch here so the lead still gets captured even if AI is having a temporary 500 error
       }
 
-      setRecommendation(result);
-
-      // 4. Capture Leads (Concurrently)
-      console.log("Capturing lead data to Serlzo and Firebase...");
+      // 4. Capture Leads (Always attempt this)
+      console.log("Capturing lead data to Serlzo...");
       
-      const serlzoParams = new URLSearchParams();
-      serlzoParams.append('fullName', leadName);
-      serlzoParams.append('email', leadEmail);
-      serlzoParams.append('phone', leadPhone);
-      serlzoParams.append('listId', '69dcf75efa683a8aebdf37c6');
-      serlzoParams.append('formId', '69dcf7c9fa683a8aebdf3ca7');
+      const serlzoPayload = {
+        fullName: leadName.trim(),
+        name: leadName.trim(),
+        email: leadEmail.trim().toLowerCase(),
+        phone: leadPhone.trim(),
+        listId: "69dcf75efa683a8aebdf37c6",
+        formId: "69dcf7c9fa683a8aebdf3ca7",
+        triggerAutomation: true,
+        trigger_automation: true,
+        event: "form_submission",
+        tags: ["webform", "ai_recommender"]
+      };
 
       const captureToSerlzo = fetch("https://cdn.serlzo.com/form/create-lead/", {
         method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: serlzoParams
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(serlzoPayload)
       }).then(async res => {
-        // Serlzo might return text or JSON
         const text = await res.text();
         console.log("Serlzo Raw Response:", text);
-        try {
-          return JSON.parse(text);
-        } catch (e) {
-          return { status: "ok", raw: text };
-        }
+        return text;
       }).catch(err => {
         console.error("Serlzo Capture Error:", err);
       });
@@ -222,26 +222,24 @@ export default function App() {
         contextSituation,
         toolPreference,
         aiResult: result,
-        tags: ["ai_recommendation_ready", "web_app"],
+        status: result ? "completed" : "ai_failed",
         createdAt: serverTimestamp()
-      }).then(() => console.log("Firebase Lead Recorded"))
-        .catch(err => console.error("Firebase Capture Error:", err));
+      }).catch(err => console.error("Firebase Storage Error:", err));
 
-      // Wait for lead capture to at least start
-      Promise.all([captureToSerlzo, captureToFirebase]);
+      // Wait for lead capture to finish before moving to results
+      await Promise.allSettled([captureToSerlzo, captureToFirebase]);
 
-      // Scroll to top for results
-      setTimeout(() => {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }, 100);
+      // 5. Finalize UI
+      if (!result) {
+        throw new Error("The AI service is currently overloaded (500 Error). We have saved your details and will try again. Please click the button below to retry generating your strategy.");
+      }
 
-      console.log("Setting result index...");
       setCurrentStepIndex(steps.indexOf('result'));
-      console.log("Step set to result. Current recommendation:", result);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
 
     } catch (error: any) {
       console.error("Process Error:", error);
-      setError(error.message || "Something went wrong. Please check your internet connection or try again.");
+      setError(error.message);
     } finally {
       setIsLoading(false);
     }

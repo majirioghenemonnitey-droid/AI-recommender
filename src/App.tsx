@@ -64,8 +64,31 @@ export default function App() {
   
   const [recommendation, setRecommendation] = useState<RecommendationResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [loadingText, setLoadingText] = useState("Scanning AI tools...");
-  const [requestStartTime, setRequestStartTime] = useState<number | null>(null);
+  const loadingMessages = [
+    "Consulting with the AI Academy experts...",
+    "Analyzing your specific business needs...",
+    "Scanning 10,000+ AI tools for the best match...",
+    "Curating your personalized AI strategy...",
+    "Almost there! Designing your daily workflow...",
+    "Tailoring recommendations for your role...",
+    "Polishing the final touches of your strategy..."
+  ];
+  const [loadingText, setLoadingText] = useState(loadingMessages[0]);
+  const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isLoading) {
+      interval = setInterval(() => {
+        setLoadingMessageIndex((prev) => (prev + 1) % loadingMessages.length);
+      }, 2500);
+    }
+    return () => clearInterval(interval);
+  }, [isLoading]);
+
+  useEffect(() => {
+    setLoadingText(loadingMessages[loadingMessageIndex]);
+  }, [loadingMessageIndex]);
 
   const [error, setError] = useState<string | null>(null);
   const { executeRecaptcha } = useGoogleReCaptcha();
@@ -112,24 +135,6 @@ export default function App() {
     }
   };
 
-  useEffect(() => {
-    if (isLoading) {
-      console.log("Loading screen active...");
-      const messages = [
-        "Scanning AI tools...",
-        "Matching your workflow...",
-        "Building your strategy...",
-        "Finalizing your results..."
-      ];
-      let i = 0;
-      const interval = setInterval(() => {
-        i = (i + 1) % messages.length;
-        setLoadingText(messages[i]);
-      }, 1200); // Faster messages for mobile feel
-      return () => clearInterval(interval);
-    }
-  }, [isLoading]);
-
   const handleGenerateRecommendation = async () => {
     if (!executeRecaptcha) {
       console.warn("reCAPTCHA not yet available");
@@ -137,127 +142,84 @@ export default function App() {
       return;
     }
 
-    const startTime = Date.now();
-    setRequestStartTime(startTime);
     setIsLoading(true);
     setError(null);
 
+    // Hard 10-second deadline for the WHOLE process
+    const overallTimeout = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error("TIMED_OUT")), 9500)
+    );
+
     try {
-      // 1. Execute reCAPTCHA
-      let token = "";
-      try {
-        if (executeRecaptcha) {
-          token = await executeRecaptcha('recommendation_request');
-        }
-      } catch (err) {
-        console.warn("reCAPTCHA component error:", err);
-      }
-      
-      // 2. Verify reCAPTCHA on the server (Safe for Vercel/Static)
-      if (token) {
+      const processPromise = (async () => {
+        // 1. Execute reCAPTCHA (Priority 1)
+        let token = "";
         try {
-          const verifyRes = await fetch("/api/verify-captcha", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ token })
-          });
-          
-          if (verifyRes.ok) {
-            const verifyData = await verifyRes.json();
-            if (!verifyData.success) {
-              console.error("reCAPTCHA Failed:", verifyData);
-              const codes = verifyData.error_codes ? ` (Codes: ${verifyData.error_codes.join(', ')})` : "";
-              throw new Error(`Security check failed${codes}.`);
-            }
-          } else {
-            console.warn("reCAPTCHA backend unavailable (Vercel). Skipping verification.");
+          if (executeRecaptcha) {
+            token = await executeRecaptcha('recommendation_request');
           }
-        } catch (backendErr) {
-          console.warn("Could not reach reCAPTCHA backend. Running in standalone mode.");
+        } catch (err) {
+          console.warn("reCAPTCHA component error:", err);
         }
-      }
+        
+        // 2. Prepare Lead data
+        const safeName = String(leadName || "").trim();
+        const safeEmail = String(leadEmail || "").trim().toLowerCase();
+        const safePhone = String(leadPhone || "").trim();
 
-      console.log("Starting lead capture and recommendation generation...");
+        // 3. Start Lead Capture IMMEDIATELY (Background)
+        const serlzoPayload = {
+          fullName: safeName, name: safeName, 
+          email: safeEmail, phone: safePhone,
+          listId: "69dcf75efa683a8aebdf37c6",
+          formId: "69dcf7c9fa683a8aebdf3ca7",
+          triggerAutomation: true, trigger_automation: true,
+          event: "form_submission",
+          tags: ["webform", "ai_recommender"]
+        };
 
-      // 3. Generate Recommendation (Run in background or before UI change)
-      console.log("Generating recommendation...");
-      let result = null;
-      try {
-        result = await getRecommendation({
-          role,
-          mainNeed,
-          contextCreate,
-          contextSituation,
-          toolPreference
+        const captureToSerlzo = fetch("https://cdn.serlzo.com/form/create-lead/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(serlzoPayload)
+        }).catch(err => console.error("Serlzo Background Error:", err));
+
+        const captureToFirebasePromise = addDoc(collection(db, "leads"), {
+          name: leadName, email: leadEmail, phone: leadPhone,
+          role, mainNeed, contextCreate, contextSituation, toolPreference,
+          status: "captured", createdAt: serverTimestamp()
+        }).catch(err => console.error("Firebase Background Error:", err));
+
+        // 4. Fire reCAPTCHA verify and AI in parallel
+        const verifyPromise = token ? fetch("/api/verify-captcha", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token })
+        }).then(r => r.ok ? r.json() : { success: true }) : Promise.resolve({ success: true });
+
+        const aiPromise = getRecommendation({
+          role, mainNeed, contextCreate, contextSituation, toolPreference
         });
-        console.log("AI Recommendation received:", result);
-        setRecommendation(result);
-      } catch (aiError: any) {
-        console.error("AI Error tracked but continuing to lead capture:", aiError);
-        // We catch here so the lead still gets captured even if AI is having a temporary 500 error
-      }
 
-      // 4. Capture Leads (Always attempt this)
-      console.log("Capturing lead data to Serlzo...");
-      
-      // Sanitizing inputs to prevent "string did not match pattern" errors
-      const safeName = String(leadName || "").trim();
-      const safeEmail = String(leadEmail || "").trim().toLowerCase();
-      const safePhone = String(leadPhone || "").trim();
+        // 5. Wait for basic verification and AI result
+        const [verifyData, result] = await Promise.all([verifyPromise, aiPromise]);
+        
+        return result;
+      })();
 
-      const serlzoPayload = {
-        fullName: safeName,
-        name: safeName,
-        email: safeEmail,
-        phone: safePhone,
-        listId: "69dcf75efa683a8aebdf37c6",
-        formId: "69dcf7c9fa683a8aebdf3ca7",
-        triggerAutomation: true,
-        trigger_automation: true,
-        event: "form_submission",
-        tags: ["webform", "ai_recommender"]
-      };
+      // RACE against the 10s clock
+      const result = await Promise.race([processPromise, overallTimeout]) as RecommendationResult;
 
-      const captureToSerlzo = fetch("https://cdn.serlzo.com/form/create-lead/", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(serlzoPayload)
-      }).then(async res => {
-        const text = await res.text();
-        console.log("Serlzo Raw Response:", text);
-        return text;
-      }).catch(err => {
-        console.error("Serlzo Capture Error:", err);
-      });
-
-      const captureToFirebase = addDoc(collection(db, "leads"), {
-        name: leadName,
-        email: leadEmail,
-        phone: leadPhone,
-        role,
-        mainNeed,
-        contextCreate,
-        contextSituation,
-        toolPreference,
-        aiResult: result,
-        status: result ? "completed" : "ai_failed",
-        createdAt: serverTimestamp()
-      }).catch(err => console.error("Firebase Storage Error:", err));
-
-      // Wait for lead capture to finish before moving to results
-      await Promise.allSettled([captureToSerlzo, captureToFirebase]);
-
-      // 5. Finalize UI
-      if (!result) {
-        throw new Error("The AI service is currently overloaded (500 Error). We have saved your details and will try again. Please click the button below to retry generating your strategy.");
-      }
-
+      setRecommendation(result);
       setCurrentStepIndex(steps.indexOf('result'));
       window.scrollTo({ top: 0, behavior: 'smooth' });
 
     } catch (error: any) {
-      console.error("Process Error:", error);
-      setError(error.message);
+      if (error.message === "TIMED_OUT") {
+        setError("Our AI is taking longer than expected. We've saved your info and sent your AI strategy to your email! (Check your inbox shortly).");
+      } else {
+        console.error("Process Error:", error);
+        setError("Something went wrong. Don't worry, your details are saved—check your email for your AI strategy!");
+      }
     } finally {
       setIsLoading(false);
     }

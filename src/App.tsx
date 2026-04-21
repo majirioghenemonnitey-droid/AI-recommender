@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 import { Sparkles, ArrowRight, CheckCircle2, ChevronRight, BrainCircuit, ChevronLeft, Info, Download } from 'lucide-react';
 import PhoneInput, { isValidPhoneNumber } from 'react-phone-number-input';
 import 'react-phone-number-input/style.css';
 import { ProgressBar, OptionCard, Chip, TextInput, TextArea, Button, ScreenTransition } from './components/ui';
-import { SerlzoForm } from './components/SerlzoForm';
 import { getRecommendation, RecommendationResult } from './lib/gemini';
 import { db } from './lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
@@ -68,91 +68,28 @@ export default function App() {
   const [requestStartTime, setRequestStartTime] = useState<number | null>(null);
 
   const [error, setError] = useState<string | null>(null);
+  const { executeRecaptcha } = useGoogleReCaptcha();
 
   const steps: StepId[] = ['landing', 'role', 'need', 'context', 'lead', 'result'];
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
-
-  // Consolidated Initialization: Handle persistence and URL params
-  useEffect(() => {
-    // 1. Load basic persistent data
-    const savedRole = localStorage.getItem('nexus_role') || '';
-    const savedNeed = localStorage.getItem('nexus_mainNeed') || '';
-    const savedContextCreate = localStorage.getItem('nexus_contextCreate') || '';
-    const savedContextSituation = localStorage.getItem('nexus_contextSituation') || '';
-    const savedToolPreference = localStorage.getItem('nexus_toolPreference') || '';
-    const savedStep = localStorage.getItem('nexus_step') || 'landing';
-
-    // Apply to state
-    if (savedRole) setRole(savedRole);
-    if (savedNeed) setMainNeed(savedNeed);
-    if (savedContextCreate) setContextCreate(savedContextCreate);
-    if (savedContextSituation) setContextSituation(savedContextSituation);
-    if (savedToolPreference) setToolPreference(savedToolPreference);
-
-    // 2. Extract Lead Info from URL
-    const params = new URLSearchParams(window.location.search);
-    const urlName = params.get('name') || params.get('fullName') || '';
-    const urlEmail = params.get('email') || '';
-    const urlPhone = params.get('phone') || '';
-
-    if (urlName) setLeadName(urlName);
-    if (urlEmail) setLeadEmail(urlEmail);
-    if (urlPhone) setLeadPhone(urlPhone);
-
-    const hasAnyLeadData = urlName || urlEmail || urlPhone;
-
-    // 3. Determine Starting Step
-    if (hasAnyLeadData && savedRole && savedNeed) {
-      console.log("Returning lead detected. Triggering auto-generation.");
-      
-      const triggerRec = async () => {
-        setIsLoading(true);
-        setError(null); 
-        try {
-          const result = await getRecommendation({
-            role: savedRole,
-            mainNeed: savedNeed,
-            contextCreate: savedContextCreate,
-            contextSituation: savedContextSituation,
-            toolPreference: savedToolPreference
-          });
-          setRecommendation(result);
-          setCurrentStepIndex(steps.indexOf('result'));
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        } catch (err) {
-          console.error("Auto-generation failed on return:", err);
-          setError(err instanceof Error ? err.message : "Connection issue. Please use the 'See Results' button below.");
-          setCurrentStepIndex(steps.indexOf('lead'));
-        } finally {
-          setIsLoading(false);
-        }
-      };
-      
-      triggerRec();
-    } else if (savedStep && savedStep !== 'result') {
-      // Otherwise, resume from the last step
-      const stepIdx = steps.indexOf(savedStep as StepId);
-      if (stepIdx !== -1) {
-        setCurrentStepIndex(stepIdx);
-      }
-    }
-  }, []); // Run ONLY once on mount
-
-  // Save state changes as they happen
-  useEffect(() => {
-    if (role) localStorage.setItem('nexus_role', role);
-    if (mainNeed) localStorage.setItem('nexus_mainNeed', mainNeed);
-    if (contextCreate) localStorage.setItem('nexus_contextCreate', contextCreate);
-    if (contextSituation) localStorage.setItem('nexus_contextSituation', contextSituation);
-    if (toolPreference) localStorage.setItem('nexus_toolPreference', toolPreference);
-    
-    const step = steps[currentStepIndex];
-    if (step && step !== 'result' && step !== 'landing') {
-      localStorage.setItem('nexus_step', step);
-    }
-  }, [role, mainNeed, contextCreate, contextSituation, toolPreference, currentStepIndex]);
-
   const currentStep = steps[currentStepIndex];
+
+  useEffect(() => {
+    // Scroll to top on step change
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentStepIndex]);
+
+  // Auto-fill from URL parameters (for Serlzo redirects)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const name = params.get('name') || params.get('fullName');
+    const email = params.get('email');
+    const phone = params.get('phone');
+    
+    if (name) setLeadName(name);
+    if (email) setLeadEmail(email);
+    if (phone) setLeadPhone(phone);
+  }, []);
 
   const goNext = () => {
     const nextIndex = currentStepIndex + 1;
@@ -194,12 +131,43 @@ export default function App() {
   }, [isLoading]);
 
   const handleGenerateRecommendation = async () => {
+    if (!executeRecaptcha) {
+      console.warn("reCAPTCHA not yet available");
+      setError("Security check is initializing... please wait a moment and try again.");
+      return;
+    }
+
     const startTime = Date.now();
     setRequestStartTime(startTime);
     setIsLoading(true);
+    setError(null);
 
-    console.log("Starting recommendation generation...");
     try {
+      // 1. Execute reCAPTCHA
+      const token = await executeRecaptcha('recommendation_request');
+      
+      // 2. Verify reCAPTCHA on the server
+      const verifyRes = await fetch("/api/verify-captcha", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token })
+      });
+      const verifyData = await verifyRes.json();
+
+      if (!verifyData.success) {
+        console.error("reCAPTCHA Verification Failed:", verifyData);
+        const codes = verifyData.error_codes ? ` (Codes: ${verifyData.error_codes.join(', ')})` : "";
+        throw new Error(`Security check failed${codes}. Please ensure your reCAPTCHA v3 keys are correct and refresh the page.`);
+      }
+      
+      if (verifyData.score && verifyData.score < 0.5) {
+        throw new Error("Security check suggests automated traffic. If you are a human, please try refreshing the page or using a different browser.");
+      }
+
+      console.log("Starting lead capture and recommendation generation...");
+
+      // 3. Generate Recommendation FIRST so we can send results to Serlzo
+      console.log("Calling getRecommendation with data:", { role, mainNeed, contextCreate, contextSituation, toolPreference });
       const result = await getRecommendation({
         role,
         mainNeed,
@@ -207,35 +175,44 @@ export default function App() {
         contextSituation,
         toolPreference
       });
-      console.log("AI Recommendation generated:", result);
-
-      // IMMEDIATELY show the success screen so the user doesn't wait
-      setRecommendation(result);
-      setTimeout(() => {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }, 100);
-      setCurrentStepIndex(steps.indexOf('result'));
-
-      // Fire-and-forget: Save to Serlzo in the background
-      const serlzoPayload = {
-        fullName: leadName,
-        email: leadEmail,
-        phone: leadPhone,
-        listId: "69dcf75efa683a8aebdf37c6",
-        formId: "69dcf7c9fa683a8aebdf3ca7",
-        tags: ["new_lead"]
-      };
       
-      fetch("https://cdn.serlzo.com/form/create-lead/", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(serlzoPayload)
-      }).then(res => res.json())
-        .then(data => console.log("Serlzo Response:", data))
-        .catch(err => console.error("Error saving to Serlzo:", err));
+      console.log("AI Recommendation successfully received:", result);
+      
+      if (!result || !result.primaryTool) {
+        console.error("AI returned an empty or invalid result:", result);
+        throw new Error("The AI returned an invalid response. Please try again with more details.");
+      }
 
-      // Fire-and-forget: Save to Firebase in the background
-      addDoc(collection(db, "leads"), {
+      setRecommendation(result);
+
+      // 4. Capture Leads (Concurrently)
+      console.log("Capturing lead data to Serlzo and Firebase...");
+      
+      const serlzoParams = new URLSearchParams();
+      serlzoParams.append('fullName', leadName);
+      serlzoParams.append('email', leadEmail);
+      serlzoParams.append('phone', leadPhone);
+      serlzoParams.append('listId', '69dcf75efa683a8aebdf37c6');
+      serlzoParams.append('formId', '69dcf7c9fa683a8aebdf3ca7');
+
+      const captureToSerlzo = fetch("https://cdn.serlzo.com/form/create-lead/", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: serlzoParams
+      }).then(async res => {
+        // Serlzo might return text or JSON
+        const text = await res.text();
+        console.log("Serlzo Raw Response:", text);
+        try {
+          return JSON.parse(text);
+        } catch (e) {
+          return { status: "ok", raw: text };
+        }
+      }).catch(err => {
+        console.error("Serlzo Capture Error:", err);
+      });
+
+      const captureToFirebase = addDoc(collection(db, "leads"), {
         name: leadName,
         email: leadEmail,
         phone: leadPhone,
@@ -244,15 +221,27 @@ export default function App() {
         contextCreate,
         contextSituation,
         toolPreference,
-        recommendation: result,
-        tags: ["new_lead"],
+        aiResult: result,
+        tags: ["ai_recommendation_ready", "web_app"],
         createdAt: serverTimestamp()
-      }).then(() => console.log("Lead saved to Firebase successfully!"))
-        .catch(err => handleFirestoreError(err, OperationType.CREATE, "leads"));
+      }).then(() => console.log("Firebase Lead Recorded"))
+        .catch(err => console.error("Firebase Capture Error:", err));
 
-    } catch (error) {
-      console.error("CRITICAL ERROR in handleGenerateRecommendation:", error);
-      setError(error instanceof Error ? error.message : "The AI is taking longer than usual. This can happen if the connection is slow.");
+      // Wait for lead capture to at least start
+      Promise.all([captureToSerlzo, captureToFirebase]);
+
+      // Scroll to top for results
+      setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 100);
+
+      console.log("Setting result index...");
+      setCurrentStepIndex(steps.indexOf('result'));
+      console.log("Step set to result. Current recommendation:", result);
+
+    } catch (error: any) {
+      console.error("Process Error:", error);
+      setError(error.message || "Something went wrong. Please check your internet connection or try again.");
     } finally {
       setIsLoading(false);
     }
@@ -609,34 +598,40 @@ ${recommendation.nextStep}`;
                 <Sparkles className="w-4 h-4" /> Almost there!
               </div>
               <h1 className="text-3xl font-bold text-gray-900 mb-3 tracking-tight font-display">Where should we send your strategy?</h1>
-              <p className="text-gray-600 text-lg mb-6">Enter your details to unlock your custom AI recommendation and join our email community.</p>
+              <p className="text-gray-600 text-lg">Enter your details to unlock your custom AI recommendation.</p>
             </div>
-            
-            <div className="w-full max-w-md mb-8">
-               <SerlzoForm formId="69dcf7c9fa683a8aebdf3ca7" />
-               
-               {(leadName || leadEmail) && (
-                 <motion.div 
-                   initial={{ opacity: 0, y: 10 }}
-                   animate={{ opacity: 1, y: 0 }}
-                   className="mt-6 p-6 bg-nexus-cobalt/5 border border-nexus-cobalt/20 rounded-2xl text-center"
-                 >
-                   <p className="text-nexus-navy font-bold mb-3">Welcome back, {leadName.split(' ')[0]}!</p>
-                   <p className="text-sm text-gray-600 mb-5">Your details are captured. Click below to view your personalized AI Strategy.</p>
-                   <Button 
-                     onClick={handleGenerateRecommendation}
-                   >
-                     See My Results <Sparkles className="w-5 h-5 ml-2" />
-                   </Button>
-                 </motion.div>
-               )}
-               
-               <div className="mt-6 p-4 bg-nexus-silver/20 rounded-xl border border-nexus-silver/50 text-xs text-gray-500 text-center italic">
-                 Note: If you already submitted, just click "See My Results" above.
-               </div>
+            <div className="w-full max-w-md flex flex-col gap-6 mb-8">
+              <TextInput
+                label="Full Name"
+                placeholder="e.g., Jane Doe"
+                value={leadName}
+                onChange={setLeadName}
+              />
+              <TextInput
+                label="Email Address"
+                placeholder="e.g., jane@example.com"
+                value={leadEmail}
+                onChange={setLeadEmail}
+              />
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-gray-700">WhatsApp Number</label>
+                <PhoneInput
+                  international
+                  defaultCountry="NG"
+                  value={leadPhone}
+                  onChange={(val) => setLeadPhone(val || '')}
+                  className="flex h-12 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:border-transparent disabled:cursor-not-allowed disabled:opacity-50 transition-all shadow-sm"
+                />
+              </div>
             </div>
-
             <div className="w-full max-w-md flex flex-col gap-4">
+              <Button 
+                onClick={handleGenerateRecommendation} 
+                disabled={!leadName || !leadEmail || !leadEmail.includes('@') || !leadPhone || !isValidPhoneNumber(leadPhone)} 
+                loading={isLoading}
+              >
+                Unlock My AI Strategy <ArrowRight className="w-5 h-5" />
+              </Button>
               <button 
                 onClick={goBack}
                 className="text-gray-500 font-medium hover:text-gray-700 transition-colors flex items-center justify-center gap-1 py-2"
@@ -664,6 +659,12 @@ ${recommendation.nextStep}`;
               <h1 className="text-3xl sm:text-4xl font-bold text-nexus-navy mb-4 tracking-tight leading-tight text-center font-display">
                 Your Custom <span className="text-nexus-cobalt italic font-serif">AI Strategy</span>
               </h1>
+
+              {!recommendation && (
+                <div className="text-center py-12">
+                  <p className="text-gray-500">Processing your recommendation details...</p>
+                </div>
+              )}
 
               {recommendation && (
                 <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden mb-12">

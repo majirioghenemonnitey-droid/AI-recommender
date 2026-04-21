@@ -14,7 +14,8 @@ export default defineConfig(({ mode }) => {
     base: '/',
     plugins: [react(), tailwindcss()],
     define: {
-      // Keys are now handled securely via /api routes
+      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY || process.env.GEMINI_API_KEY || ""),
+      'process.env.VITE_RECAPTCHA_SITE_KEY': JSON.stringify(env.VITE_RECAPTCHA_SITE_KEY || process.env.VITE_RECAPTCHA_SITE_KEY || ""),
     },
     resolve: {
       alias: {

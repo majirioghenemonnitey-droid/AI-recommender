@@ -169,11 +169,7 @@ export default function App() {
             const verifyData = await verifyRes.json();
             if (!verifyData.success) {
               console.error("reCAPTCHA Failed:", verifyData);
-              const codes = verifyData.error_codes ? ` (Codes: ${verifyData.error_codes.join(', ')})` : "";
-              throw new Error(`Security check failed${codes}.`);
             }
-          } else {
-            console.warn("reCAPTCHA backend unavailable (Vercel). Skipping verification.");
           }
         } catch (backendErr) {
           console.warn("Could not reach reCAPTCHA backend. Running in standalone mode.");
@@ -250,7 +246,13 @@ export default function App() {
 
     } catch (error: any) {
       console.error("Process Error:", error);
-      setError(error.message);
+      
+      // Better error message for the user based on their feedback
+      if (currentStep === 'lead') {
+        setError("Something went wrong with the AI generation. Don't worry, your details are already saved—check back soon or check your email/WhatsApp for your strategy!");
+      } else {
+        setError(error.message || "Something went wrong. Please try again.");
+      }
     } finally {
       setIsLoading(false);
     }

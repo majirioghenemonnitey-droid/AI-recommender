@@ -56,22 +56,29 @@ INSTRUCTIONS:
 7. For next steps, mention the AI Literacy Academy for mastering workflows.
 `;
 
-    try {
-      const response = await ai.models.generateContent({
-        model: "gemini-1.5-flash", 
-        contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
-        config: {
-          systemInstruction: systemInstruction,
-          responseMimeType: "application/json",
-        },
-      });
+    let lastError = null;
+    for (let i = 0; i < 2; i++) {
+      try {
+        const response = await ai.models.generateContent({
+          model: "gemini-1.5-flash", 
+          contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+          config: {
+            systemInstruction: systemInstruction,
+            responseMimeType: "application/json",
+          },
+        });
 
-      const result = JSON.parse(response.text);
-      res.json(result);
-    } catch (error: any) {
-      console.error("Gemini Server Error:", error);
-      res.status(500).json({ error: "Failed to generate recommendation. The AI service is currently busy." });
+        const result = JSON.parse(response.text);
+        return res.json(result);
+      } catch (error: any) {
+        lastError = error;
+        console.warn(`Gemini server attempt ${i + 1} failed:`, error.message);
+        if (i === 0) await new Promise(r => setTimeout(r, 1000));
+      }
     }
+
+    console.error("Gemini Server Final Error:", lastError);
+    res.status(500).json({ error: "Failed to generate recommendation. The AI service is currently busy." });
   });
 
   // reCAPTCHA v3 verification

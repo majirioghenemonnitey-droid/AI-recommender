@@ -49,20 +49,28 @@ INSTRUCTIONS:
 7. For next steps, mention the AI Literacy Academy for mastering workflows.
 `;
 
-  try {
-    const response = await ai.models.generateContent({
-      model: "gemini-1.5-flash",
-      contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
-      config: {
-        systemInstruction: systemInstruction,
-        responseMimeType: "application/json",
-      },
-    });
+  let lastError = null;
+  for (let i = 0; i < 2; i++) {
+    try {
+      const response = await ai.models.generateContent({
+        model: "gemini-1.5-flash",
+        contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+        config: {
+          systemInstruction: systemInstruction,
+          responseMimeType: "application/json",
+        },
+      });
 
-    const result = JSON.parse(response.text);
-    res.json(result);
-  } catch (error: any) {
-    console.error("Gemini Vercel Error:", error);
-    res.status(500).json({ error: "The AI service is currently busy. Please try again in 30 seconds." });
+      const result = JSON.parse(response.text);
+      return res.json(result);
+    } catch (error: any) {
+      lastError = error;
+      console.warn(`Gemini attempt ${i + 1} failed:`, error.message);
+      // Wait a bit before retry
+      if (i === 0) await new Promise(r => setTimeout(r, 1000));
+    }
   }
+
+  console.error("Gemini Vercel Final Error:", lastError);
+  res.status(500).json({ error: "The AI service is currently busy. Please try again or check your email for the strategy." });
 }

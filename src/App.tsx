@@ -486,7 +486,7 @@ ${recommendation.nextStep}`;
                 <NexusLogo className="w-4 h-4" /> The Nexus Matchmaker
               </div>
               <h1 className="text-4xl md:text-5xl font-black text-nexus-navy mb-6 tracking-tight leading-tight font-display">
-                Majirioghene for your <span className="text-nexus-cobalt">next move.</span>
+                The perfect AI tool for your <span className="text-nexus-cobalt">next move.</span>
               </h1>
               <p className="text-xl text-gray-600 mb-10 leading-relaxed">
                 Tell me what you're trying to do, and I'll give you the perfect tool, a backup option, and a strategy to get the best results.
@@ -814,7 +814,7 @@ ${recommendation.nextStep}`;
               
               <div className="flex flex-col items-center gap-4 pb-24 sm:pb-10">
                 <div className="h-px w-12 bg-gray-200" />
-                <p className="text-[10px] text-gray-400 uppercase tracking-widest font-bold">Powered by Majirioghene</p>
+                <p className="text-[10px] text-gray-400 uppercase tracking-widest font-bold">Powered by Majimoni</p>
               </div>
             </div>
           </ScreenTransition>

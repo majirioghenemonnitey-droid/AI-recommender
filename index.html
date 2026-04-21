@@ -6,28 +6,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <title>AI Recommender - AI Literacy Academy</title>
-    <!-- Serlzo FormV2 Script -->
-    <script src="https://cdn.serlzo.com/public/formv2/htmlform/htmlform.min.js" serlzo-form-id="69dcf7c9fa683a8aebdf3ca7"></script>
   </head>
   <body>
-    <script>
-      window.onerror = function(msg, url, lineNo, columnNo, error) {
-        console.error('Window Error:', msg, url, lineNo, columnNo, error);
-        // Do not show alert in production for users, but helpful for debugging right now
-        if (window.location.hostname === 'localhost' || window.location.hostname.includes('ais-dev')) {
-           // alert('Debug: JS Error - ' + msg);
-        }
-        return false;
-      };
-    </script>
-    <div id="root">
-      <div style="height: 100vh; display: flex; align-items: center; justify-content: center; font-family: sans-serif; color: #1e1b4b; background-color: #f8fafc;">
-        <div style="text-align: center;">
-          <h1 style="margin-bottom: 8px;">AI Academy</h1>
-          <p style="color: #64748b;">Initializing magic...</p>
-        </div>
-      </div>
-    </div>
+    <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

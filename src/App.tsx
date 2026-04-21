@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Sparkles, ArrowRight, CheckCircle2, ChevronRight, BrainCircuit, ChevronLeft, Info, Download } from 'lucide-react';
 import PhoneInput, { isValidPhoneNumber } from 'react-phone-number-input';
 import 'react-phone-number-input/style.css';
 import { ProgressBar, OptionCard, Chip, TextInput, TextArea, Button, ScreenTransition } from './components/ui';
+import { SerlzoForm } from './components/SerlzoForm';
 import { getRecommendation, RecommendationResult } from './lib/gemini';
 import { db } from './lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
@@ -48,7 +49,6 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
 type StepId = 'landing' | 'lead' | 'role' | 'need' | 'context' | 'result';
 
 export default function App() {
-  const serlzoFormRef = useRef<HTMLFormElement>(null);
   const [role, setRole] = useState('');
   const [mainNeed, setMainNeed] = useState('');
   
@@ -71,7 +71,49 @@ export default function App() {
 
   const steps: StepId[] = ['landing', 'role', 'need', 'context', 'lead', 'result'];
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
-  const currentStep = steps[currentStepIndex];
+
+  // Persistence: Load from localStorage on mount
+  useEffect(() => {
+    const savedRole = localStorage.getItem('nexus_role');
+    const savedNeed = localStorage.getItem('nexus_mainNeed');
+    const savedContextCreate = localStorage.getItem('nexus_contextCreate');
+    const savedContextSituation = localStorage.getItem('nexus_contextSituation');
+    const savedToolPreference = localStorage.getItem('nexus_toolPreference');
+    const savedStep = localStorage.getItem('nexus_step');
+
+    if (savedRole) setRole(savedRole);
+    if (savedNeed) setMainNeed(savedNeed);
+    if (savedContextCreate) setContextCreate(savedContextCreate);
+    if (savedContextSituation) setContextSituation(savedContextSituation);
+    if (savedToolPreference) setToolPreference(savedToolPreference);
+    
+    // If we have lead info in URL, we want to try to go to results
+    const params = new URLSearchParams(window.location.search);
+    const hasLead = params.get('email') || params.get('fullName') || params.get('phone');
+    
+    if (hasLead && savedRole && savedNeed) {
+      // Don't set step index yet, wait for lead info to be processed by other useEffect
+    } else if (savedStep) {
+      const stepIdx = steps.indexOf(savedStep as StepId);
+      if (stepIdx !== -1 && stepIdx !== steps.indexOf('result')) {
+        setCurrentStepIndex(stepIdx);
+      }
+    }
+  }, []);
+
+  // Save to localStorage when state changes
+  useEffect(() => {
+    if (role) localStorage.setItem('nexus_role', role);
+    if (mainNeed) localStorage.setItem('nexus_mainNeed', mainNeed);
+    if (contextCreate) localStorage.setItem('nexus_contextCreate', contextCreate);
+    if (contextSituation) localStorage.setItem('nexus_contextSituation', contextSituation);
+    if (toolPreference) localStorage.setItem('nexus_toolPreference', toolPreference);
+    
+    const step = steps[currentStepIndex];
+    if (step !== 'result') {
+      localStorage.setItem('nexus_step', step);
+    }
+  }, [role, mainNeed, contextCreate, contextSituation, toolPreference, currentStepIndex]);
 
   // Auto-fill from URL parameters (for Serlzo redirects)
   useEffect(() => {
@@ -83,7 +125,18 @@ export default function App() {
     if (name) setLeadName(name);
     if (email) setLeadEmail(email);
     if (phone) setLeadPhone(phone);
-  }, []);
+
+    // If we have all lead info and we are at a step before result, trigger recommendation
+    if ((name || email || phone) && currentStepIndex < steps.indexOf('result')) {
+      // Small delay to ensure state and logic are ready
+      const timer = setTimeout(() => {
+        handleGenerateRecommendation();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [currentStepIndex]);
+
+  const currentStep = steps[currentStepIndex];
 
   const goNext = () => {
     const nextIndex = currentStepIndex + 1;
@@ -140,22 +193,32 @@ export default function App() {
       });
       console.log("AI Recommendation generated:", result);
 
-      // --- SILENT SERLZO SUBMISSION (Bypasses CORS/API logic) ---
-      if (serlzoFormRef.current) {
-        try {
-          const form = serlzoFormRef.current;
-          (form.elements.namedItem('fullName') as HTMLInputElement).value = leadName;
-          (form.elements.namedItem('email') as HTMLInputElement).value = leadEmail;
-          (form.elements.namedItem('phone') as HTMLInputElement).value = leadPhone;
-          
-          console.log("🚀 TRIGGERING SILENT SERLZO SYNC...");
-          form.submit();
-        } catch (err) {
-          console.warn("Silent Serlzo Sync Issue:", err);
-        }
-      }
+      // IMMEDIATELY show the success screen so the user doesn't wait
+      setRecommendation(result);
+      setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 100);
+      setCurrentStepIndex(steps.indexOf('result'));
 
-      // Save to Firebase in the background
+      // Fire-and-forget: Save to Serlzo in the background
+      const serlzoPayload = {
+        fullName: leadName,
+        email: leadEmail,
+        phone: leadPhone,
+        listId: "69dcf75efa683a8aebdf37c6",
+        formId: "69dcf7c9fa683a8aebdf3ca7",
+        tags: ["new_lead"]
+      };
+      
+      fetch("https://cdn.serlzo.com/form/create-lead/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(serlzoPayload)
+      }).then(res => res.json())
+        .then(data => console.log("Serlzo Response:", data))
+        .catch(err => console.error("Error saving to Serlzo:", err));
+
+      // Fire-and-forget: Save to Firebase in the background
       addDoc(collection(db, "leads"), {
         name: leadName,
         email: leadEmail,
@@ -166,16 +229,10 @@ export default function App() {
         contextSituation,
         toolPreference,
         recommendation: result,
-        tags: ["new_lead", "serlzo_integrated"],
+        tags: ["new_lead"],
         createdAt: serverTimestamp()
-      }).catch(err => console.error("Firebase lead save error:", err));
-
-      // NOW show the success screen
-      setRecommendation(result);
-      setTimeout(() => {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }, 100);
-      setCurrentStepIndex(steps.indexOf('result'));
+      }).then(() => console.log("Lead saved to Firebase successfully!"))
+        .catch(err => handleFirestoreError(err, OperationType.CREATE, "leads"));
 
     } catch (error) {
       console.error("CRITICAL ERROR in handleGenerateRecommendation:", error);
@@ -536,40 +593,17 @@ ${recommendation.nextStep}`;
                 <Sparkles className="w-4 h-4" /> Almost there!
               </div>
               <h1 className="text-3xl font-bold text-gray-900 mb-3 tracking-tight font-display">Where should we send your strategy?</h1>
-              <p className="text-gray-600 text-lg">Enter your details to unlock your custom AI recommendation.</p>
+              <p className="text-gray-600 text-lg mb-6">Enter your details to unlock your custom AI recommendation and join our email community.</p>
             </div>
-            <div className="w-full max-w-md flex flex-col gap-6 mb-8">
-              <TextInput
-                label="Name"
-                placeholder="e.g., Jane"
-                value={leadName}
-                onChange={setLeadName}
-              />
-              <TextInput
-                label="Email Address"
-                placeholder="e.g., jane@example.com"
-                value={leadEmail}
-                onChange={setLeadEmail}
-              />
-              <div className="flex flex-col gap-2">
-                <label className="text-sm font-medium text-gray-700">WhatsApp Number</label>
-                <PhoneInput
-                  international
-                  defaultCountry="NG"
-                  value={leadPhone}
-                  onChange={(val) => setLeadPhone(val || '')}
-                  className="flex h-12 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:border-transparent disabled:cursor-not-allowed disabled:opacity-50 transition-all shadow-sm"
-                />
-              </div>
+            
+            <div className="w-full max-w-md mb-8">
+               <SerlzoForm formId="69dcf7c9fa683a8aebdf3ca7" />
+               <div className="mt-4 p-3 bg-nexus-silver/20 rounded-xl border border-nexus-silver/50 text-xs text-gray-500 text-center italic">
+                 Note: After clicking join, you will be redirected back to see your results.
+               </div>
             </div>
+
             <div className="w-full max-w-md flex flex-col gap-4">
-              <Button 
-                onClick={handleGenerateRecommendation} 
-                disabled={!leadName || !leadEmail || !leadEmail.includes('@') || !leadPhone || !isValidPhoneNumber(leadPhone)} 
-                loading={isLoading}
-              >
-                Unlock My AI Strategy <ArrowRight className="w-5 h-5" />
-              </Button>
               <button 
                 onClick={goBack}
                 className="text-gray-500 font-medium hover:text-gray-700 transition-colors flex items-center justify-center gap-1 py-2"
@@ -583,19 +617,15 @@ ${recommendation.nextStep}`;
         return (
           <ScreenTransition keyId="result">
             <div className="w-full max-w-3xl px-4 sm:px-0 text-left">
-              <div className="mb-8 flex flex-col items-center justify-center">
+              <div className="mb-8 flex justify-center">
                 <motion.div 
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ type: "spring", stiffness: 260, damping: 20 }}
-                  className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center shadow-xl shadow-green-500/30 mb-4"
+                  className="w-20 h-20 bg-nexus-navy rounded-full flex items-center justify-center shadow-xl shadow-nexus-navy/30"
                 >
                   <CheckCircle2 className="w-10 h-10 text-white" />
                 </motion.div>
-                <div className="text-center">
-                  <h2 className="text-xl font-bold text-nexus-navy">Form Submitted!</h2>
-                  <p className="text-sm text-gray-500 italic">Check your email ({leadEmail}) and WhatsApp for your copy.</p>
-                </div>
               </div>
               
               <h1 className="text-3xl sm:text-4xl font-bold text-nexus-navy mb-4 tracking-tight leading-tight text-center font-display">
@@ -739,7 +769,6 @@ ${recommendation.nextStep}`;
   };
 
   return (
-    <>
     <div className="min-h-screen bg-nexus-bg font-sans selection:bg-nexus-cobalt/20 selection:text-nexus-navy">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 md:py-12 flex flex-col min-h-screen">
         
@@ -781,27 +810,6 @@ ${recommendation.nextStep}`;
         
       </div>
     </div>
-    
-    {/* SILENT SERLZO BRIDGE: Submits via hidden iframe to trigger automations without redirect */}
-    <div id="serlzo-form-container" style={{ display: 'none' }}></div>
-    <form 
-      ref={serlzoFormRef} 
-      action="https://cdn.serlzo.com/form/create-lead/" 
-      method="POST" 
-      target="serlzo_hidden_iframe" 
-      style={{ display: 'none' }}
-    >
-      <input type="hidden" name="formId" value="69dcf7c9fa683a8aebdf3ca7" />
-      <input type="hidden" name="fullName" />
-      <input type="hidden" name="email" />
-      <input type="hidden" name="phone" />
-      {/* Compatibility aliases */}
-      <input type="hidden" name="full_name" />
-      <input type="hidden" name="user_email" />
-      <input type="hidden" name="subscribe" value="true" />
-    </form>
-    <iframe name="serlzo_hidden_iframe" title="Serlzo Bridge" style={{ display: 'none' }}></iframe>
-  </>
-);
+  );
 }
 

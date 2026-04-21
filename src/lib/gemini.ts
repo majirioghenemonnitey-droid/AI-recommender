@@ -9,20 +9,20 @@ export interface RecommendationResult {
 }
 
 export async function getRecommendation(data: any): Promise<RecommendationResult> {
-  console.log("Fetching recommendation from server API...");
+  console.log("Calling Gemini API via backend...");
   
-  const response = await fetch("/api/recommend", {
-    method: "POST",
+  const response = await fetch('/api/recommend', {
+    method: 'POST',
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
     },
     body: JSON.stringify(data),
   });
 
   if (!response.ok) {
-    const err = await response.json();
-    throw new Error(err.error || "Failed to fetch recommendation");
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || `Server error: ${response.status}`);
   }
 
-  return response.json();
+  return await response.json() as RecommendationResult;
 }

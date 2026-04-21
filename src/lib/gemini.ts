@@ -13,9 +13,11 @@ export interface RecommendationResult {
 export async function getRecommendation(data: any): Promise<RecommendationResult> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    throw new Error("GEMINI_API_KEY is missing. Please add it to your app secrets.");
+    console.error("DEBUG: GEMINI_API_KEY is undefined at runtime.");
+    throw new Error("GEMINI_API_KEY is missing. Please add it to your app secrets in the settings menu.");
   }
   
+  console.log("DEBUG: GEMINI_API_KEY detected (Length:", apiKey.length, ")");
   const ai = new GoogleGenAI({ apiKey });
   
   const systemInstruction = `You are an expert AI consultant for the AI Literacy Academy. 
@@ -48,12 +50,12 @@ INSTRUCTIONS:
 `;
 
   let lastError = null;
-  const maxRetries = 2;
+  const maxRetries = 3; // Increased retries
   
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      // Trying the recommended model for text tasks
-      const modelName = "gemini-3-flash-preview"; 
+      // gemini-flash-latest usually has higher throughput stability than preview models
+      const modelName = "gemini-flash-latest"; 
       console.log(`AI Attempt ${attempt + 1} with model: ${modelName}`);
       
       const response = await ai.models.generateContent({
@@ -93,26 +95,23 @@ INSTRUCTIONS:
       });
 
       const text = response.text;
-      if (!text) {
-        console.warn("AI returned empty text on attempt", attempt + 1);
-        throw new Error("Empty response from AI");
-      }
+      if (!text) throw new Error("Empty response from AI");
       
-      console.log("Success on attempt", attempt + 1);
       return JSON.parse(text) as RecommendationResult;
     } catch (error: any) {
       lastError = error;
+      const isOverloaded = error.message?.includes("503") || error.code === 503 || String(error).includes("high demand");
+      
       console.error(`Gemini API Error (Attempt ${attempt + 1}):`, error);
       
-      // Stop immediately for security/key issues
       if (error.message?.includes("leaked") || String(error).includes("leaked")) {
         throw new Error("SECURITY_ALERT: Your Gemini API Key has been reported as leaked by Google. Please generate a NEW key and update your Secrets.");
       }
       
-      // If we still have retries left, wait and repeat
       if (attempt < maxRetries) {
-        const delay = 1500 * (attempt + 1);
-        console.log(`Waiting ${delay}ms before retry...`);
+        // If overloaded, wait longer. Otherwise standard backoff.
+        const delay = isOverloaded ? 3000 * (attempt + 1) : 1500 * (attempt + 1);
+        console.log(`Model busy or error encountered. Waiting ${delay}ms before retry ${attempt + 2}...`);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }

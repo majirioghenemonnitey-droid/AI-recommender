@@ -103,12 +103,11 @@ export default function App() {
 
     // 3. Determine Starting Step
     if (hasAnyLeadData && savedRole && savedNeed) {
-      // If we have lead info AND critical diagnostic data, trigger results
-      console.log("Lead info detected in URL. Jumping to results generation.");
+      console.log("Returning lead detected. Triggering auto-generation.");
       
-      // Use the local variables directly to avoid waiting for state updates
       const triggerRec = async () => {
         setIsLoading(true);
+        setError(null); 
         try {
           const result = await getRecommendation({
             role: savedRole,
@@ -121,8 +120,9 @@ export default function App() {
           setCurrentStepIndex(steps.indexOf('result'));
           window.scrollTo({ top: 0, behavior: 'smooth' });
         } catch (err) {
-          console.error("Auto-generation failed:", err);
-          setError(err instanceof Error ? err.message : "Failed to load results.");
+          console.error("Auto-generation failed on return:", err);
+          setError(err instanceof Error ? err.message : "Connection issue. Please use the 'See Results' button below.");
+          setCurrentStepIndex(steps.indexOf('lead'));
         } finally {
           setIsLoading(false);
         }
@@ -614,8 +614,25 @@ ${recommendation.nextStep}`;
             
             <div className="w-full max-w-md mb-8">
                <SerlzoForm formId="69dcf7c9fa683a8aebdf3ca7" />
-               <div className="mt-4 p-3 bg-nexus-silver/20 rounded-xl border border-nexus-silver/50 text-xs text-gray-500 text-center italic">
-                 Note: After clicking join, you will be redirected back to see your results.
+               
+               {(leadName || leadEmail) && (
+                 <motion.div 
+                   initial={{ opacity: 0, y: 10 }}
+                   animate={{ opacity: 1, y: 0 }}
+                   className="mt-6 p-6 bg-nexus-cobalt/5 border border-nexus-cobalt/20 rounded-2xl text-center"
+                 >
+                   <p className="text-nexus-navy font-bold mb-3">Welcome back, {leadName.split(' ')[0]}!</p>
+                   <p className="text-sm text-gray-600 mb-5">Your details are captured. Click below to view your personalized AI Strategy.</p>
+                   <Button 
+                     onClick={handleGenerateRecommendation}
+                   >
+                     See My Results <Sparkles className="w-5 h-5 ml-2" />
+                   </Button>
+                 </motion.div>
+               )}
+               
+               <div className="mt-6 p-4 bg-nexus-silver/20 rounded-xl border border-nexus-silver/50 text-xs text-gray-500 text-center italic">
+                 Note: If you already submitted, just click "See My Results" above.
                </div>
             </div>
 

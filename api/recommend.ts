@@ -72,5 +72,19 @@ INSTRUCTIONS:
   }
 
   console.error("Gemini Vercel Final Error:", lastError);
-  res.status(500).json({ error: "The AI service is currently busy. Please try again or check your email for the strategy." });
+  
+  // High quality fallback for old clients or server failure
+  return res.json({
+    primaryTool: "AI Literacy Academy",
+    whyItFits: "Because you are looking for a reliable way to master AI, the Academy is your best starting point.",
+    bestUsedFor: [
+      "Learning AI foundations",
+      "Monetizing AI tools",
+      "Workflow automation"
+    ],
+    alternativeTools: ["ChatGPT", "Serlzo"],
+    comparisonStrategy: "The Academy teaches you how to use all these tools together.",
+    betterResultsTip: "Master the foundations before choosing specific niche tools.",
+    nextStep: "Join the Academy to master these workflows."
+  });
 }

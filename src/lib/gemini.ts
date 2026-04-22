@@ -14,33 +14,75 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
 
 export async function getRecommendation(data: any): Promise<RecommendationResult> {
   const systemInstruction = `You are a professional AI Solution Architect. 
-Your goal is to provide a specific, functional AI tool recommendation by deeply REASONING with the user's provided context and specific situation.
+Your goal is to provide a specific, functional SOFTWARE TOOL recommendation by reasoning with the user's context.
+
+STRICT COMMAND:
+- The "primaryTool" MUST be a software tool from the mapping below.
+- You are FORBIDDEN from recommending "AI Literacy Academy" as the "primaryTool."
+- The "AI Literacy Academy" should ONLY be mentioned in the "nextStep" field as a way to master the tool you recommended.
 
 YOUR REASONING PROCESS:
-1. Carefully analyze the user's "Problem," "Role," and "Specific Situation."
-2. Look for nuances—e.g., if they mention a tight deadline, prioritize speed; if they mention high quality, prioritize power.
-3. Map these nuances to the most appropriate Task Activity in the STRICT TASK MAPPING table below.
-4. If a user's request spans multiple tasks, prioritize the one that addresses their most urgent "Problem."
+1. Analyze the user's context and constraints.
+2. Map their need to the specific Task Activity in the table below.
+3. Select the "Recommended Tool" from that table as the "primaryTool."
 
 STRICT TASK MAPPING:
-[Task Mapping Table from previous turn follows...]
+| Task Activity | Recommended Tool | Other Tools (Alternatives) | Use Case |
+|---|---|---|---|
+| Meeting Summaries | Otter.ai | Fireflies.ai, Fathom | Transcribes meetings and generates action items. |
+| Grammar & Spelling | Grammarly | ProWritingAid, Wordtune | Ensures professional, error-free documents. |
+| Marketing Copy | Rytr | ChatGPT, Wordtune | Creates social media captions and descriptions. |
+| Scheduling | Reclaim.ai | Google Calendar, Motion | Analyzes calendars to find optimal slots. |
+| Project Plans | Hive | Taskade, ClickUp | Generates plans based on a project brief. |
+| Graphic Design | Canva AI | Adobe Firefly, Microsoft Designer | Creates visual graphics using templates. |
+| Images from Text | Flux AI | Bing Image Creator, ChatGPT | Creates visually appealing AI images. |
+| Workflow Automation | Zapier | Taskade, ClickUp | Connects apps to automate repetitive tasks. |
+| Presentation Skills | Poised | Yoodli | Real-time feedback on speaking clarity. |
+| Brainstorming | Deepseek | ChatGPT, Claude, Gemini | Generates topics or solutions from prompts. |
+| Rewriting Text | Wordtune | Grammarly, ProWritingAid | Rephrases sentences for better clarity. |
+| Mind Maps | Taskade | ClickUp, Notion | Visualizes ideas and project structures. |
+| Short Film Videos | Kling AI | Hailuo, Veo, Hedra | Generates short clips from text scripts. |
+| Video from Text | InVideo | Lumen5, Synthesia, Pictory | Turns scripts into promotional videos. |
+| Logo Creation | Looka | Designs.ai, Canva | Generates logos based on business name. |
+| Blog Outlines | HubSpot AI | ChatGPT, Copy.ai | Creates structured outlines for writers. |
+| Creating Presentations | Gamma | Tome, Canva, Beautiful.ai | Generates entire slides with visuals. |
+| Transcribing Audio | Fireflies.ai | Otter.ai, Descript | Converts recordings into searchable text. |
+| Website Trends | Google Trends | Semrush | Identifies trending search terms/topics. |
+| Email Management | Gemini | Grammarly, Rytr, ChatGPT | Suggests personalized, relevant replies. |
+| Images from Drawings | AutoDraw | Bing Image Creator, Canva | Transforms sketches into polished icons. |
+| Data Extraction | Numerous.ai | ChatGPT, Cloud Natural Language | Extracts and categorizes data from text. |
+| Spreadsheet Analysis | Rows AI | Microsoft Copilot, Julius AI | Imports and analyzes spreadsheet data. |
+| Research | Perplexity | ChatGPT, Stanford Storm | Provides concise summaries of papers. |
+| Text Content | Claude | ChatGPT, Qwen | Generates articles and social media posts. |
+| Voiceovers | ElevenLabs | Murf AI, WellSaid Labs | Creates realistic AI voiceovers. |
+| Al Avatar Videos | HeyGen | Invideo, Synthesia | Generates animated explainer videos. |
+| Customer Support | Tawk.to | Tidio, Zendesk | Uses AI agents to resolve queries. |
+| Infographics | Visme | Canva, Piktochart | Visualizes data in digestible formats. |
+| Resumes | Teal | Resume.io, Canva | Professional formatting and content help. |
+| Audio Editing | Lalal.ai | Audacity, Descript | Cleans audio or separates tracks. |
+| Music Generation | Suno | Soundraw, AIVA | Creates songs, lyrics, and instrumentals. |
+| Complex Explanations | ChatGPT | Google AI Overviews, Perplexity | Simplifies difficult information. |
+| Exam/Interview Prep | NotebookLM | Interviewly.ai, Rytr | Generates relevant interview questions. |
+| Background Removal | Remove.bg | Canva, Fotor | Automatically removes backgrounds. |
+| Summarizing Docs | Humata | NotebookLM, ChatPDF | Condenses long docs into key points. |
+| Meeting Agendas | Fellow.app | Notion, Hugo | Creates structured agendas for focus. |
+| Quizzes & Polls | Typeform | ChatGPT | Generates questions and answer options. |
+| Website Mockups | Framer | Uizard | Generates websites from text. |
+| Competitor Analysis | Browse AI | Semrush, Ahrefs | Monitors changes on competitor sites. |
+| Daily Summaries | TLDR This | SMMRY, Splitter AI | Summarizes news and research reports. |
 `;
 
   const userPrompt = `
-USER DATA FOR REASONING:
+USER DATA:
 - Role: ${data.role || "N/A"}
 - Declared Problem: ${data.mainNeed || "N/A"}
 - Specific Context: ${data.contextCreate || "N/A"}
 - Constraints/Situation: ${data.contextSituation || "N/A"}
-- Personal Tool Preference: ${data.toolPreference || "N/A"}
 
 YOUR MISSION:
-1. Reason with the context provided above. Why is THIS tool the best choice for THIS specific person's situation?
-2. Select the Recommended Tool from the mapping that best fits the reasoning.
-3. Provide the Alternatives from the same mapping category.
-4. Explain your choice starting with: "Based on your specific situation [mention detail from context]..."
-5. Provide a "Pro Tip" specifically tailored to their situation.
-6. If the user is a BEGINNER (based on their context), recommend the "AI Literacy Academy" as primary. Otherwise, keep it as the "Next Step."`;
+1. Identify the software tool from the mapping that solves this context.
+2. Explain why it fits based on their "Specific Context."
+3. Mention the "AI Literacy Academy" in the "nextStep" field only.`;
 
   let lastError = null;
   for (let i = 0; i < 2; i++) {

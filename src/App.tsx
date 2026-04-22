@@ -783,7 +783,7 @@ ${recommendation.nextStep}`;
                     <span className="text-transparent bg-clip-text bg-gradient-to-r from-nexus-cobalt to-cyan-400">Start Getting Results.</span>
                   </h2>
                   <p className="text-nexus-silver/80 text-lg sm:text-xl leading-relaxed mb-10 max-w-2xl mx-auto font-medium">
-                    Knowing which tool to use is just the start. The real secret is knowing <strong className="text-white">how</strong> to use it to get your work done in half the time. Join the <strong className="text-white">AI Literacy Academy</strong> and get the exact steps to grow your business and win back your day.
+                    Knowing which tool to use is just the start. The real secret is knowing <strong className="text-white">how</strong> to use it to get your work done in half the time. Join the <strong className="text-white">AI Literacy Academy</strong> and get the exact steps to win back your day.
                   </p>
                   
                   <div className="flex flex-col items-center gap-4 w-full max-w-md mx-auto">

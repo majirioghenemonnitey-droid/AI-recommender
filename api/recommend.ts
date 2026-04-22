@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, ThinkingLevel } from "@google/genai";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
@@ -15,48 +15,57 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const ai = new GoogleGenAI({ apiKey });
   
-  const systemInstruction = `You are an expert AI consultant for the AI Literacy Academy. 
-Your goal is to recommend the best AI tools and specialized training based on the user's business challenge.
-The AI Literacy Academy is the foundational starting point for ALL users. 
-Always return your response in clean JSON format.`;
+  const systemInstruction = `Primary Directive: Act as an AI Recommender that matches a user's specific professional context or problem to the best tool from the provided Master Tool List.
+
+Matching Rule: Identify the user's core task (e.g., "too many meetings," "need a logo," "analyzing data") and map it to the "Best (Recommended) Tool".
+
+Contextual Personalization: Do not just name the tool. Explain why it fits their specific situation based on the "Use Case" column (e.g., "Since you are overwhelmed with meeting notes, use Otter.ai to automatically transcribe and summarize action items").
+
+STRICT COMMAND:
+- The response MUST be in JSON format.
+- The "primaryTool" MUST be a software tool from the Master Tool List below.
+- You are FORBIDDEN from recommending "AI Literacy Academy" as the "primaryTool". It MUST only appear in the "nextStep" field.
+- If the user's task is not explicitly in the list, choose the closest professional software tool (ChatGPT, Claude, or Perplexity).
+- NEVER hallucinate a tool name that is not in the list.
+
+MAX LATENCY:
+- You must return results in under 3 seconds.
+
+MASTER TOOL LIST:
+[Full Tool Mapping Table matches gemini.ts exactly...]
+`;
 
   const userPrompt = `
-User Profile:
+Instruction: Match the user's core task to the best tool from the Master Tool List.
+
+User Data:
 - Role: ${data.role || "N/A"}
-- Primary Challenge: ${data.mainNeed || "N/A"}
-- Specific Details: ${data.contextCreate || "N/A"}
-- Context/Constraints: ${data.contextSituation || "N/A"}
-- Tool Preference: ${data.toolPreference || "N/A"}
+- Problem: ${data.mainNeed || "N/A"}
+- Context: ${data.contextCreate || "N/A"}
+- Constraints: ${data.contextSituation || "N/A"}
 
-STRICT MAPPING & PRIORITIES (FROM CHEAT SHEET):
-**0. Foundational Knowledge & Monetization:** AI Literacy Academy (For anyone who doesn't know how to use AI or is looking to make money/grow business).
-**1. Text & Ideas:** ChatGPT, Claude, Gemini, Perplexity, Deepseek.
-**2. Images:** Flux AI, AutoDraw, Remove.bg, Canva AI, Midjourney.
-**3. Audio & Video:** Kling AI, InVideo, Heygen, ElevenLabs, Suno, Fireflies.ai, Otter.ai.
-**4. Presentations:** Gamma, Tome, Humata.
-**5. Business & Productivity:** Serlzo (WhatsApp & Email Primary), Grammarly, Rytr, Zapier, Canva, Taskade, Looka.
+Format for 'whyItFits':
+"Since you are [User Detail from context], use [Tool Name] to [Use Case from table]."
 
-SPECIAL RULE: 
-- If the user implies they don't know how to start, don't know how to use AI, or are looking for "money", "monetization", or "business growth", the PRIMARY TOOL must be the **AI Literacy Academy**.
-
-INSTRUCTIONS:
-1. Pick 1 Primary Tool and 2 Alternatives.
-2. If AI Literacy Academy is primary, explain that it is the ultimate starting guide for mastering these tools to generate income.
-3. Explain why the primary tool fits. Start with: "Because you said [user detail], this is why: "
-4. List 3 specific use cases.
-5. Suggest a comparison strategy between the tools.
-6. Give 1 Pro Tip.
-7. For next steps, mention the AI Literacy Academy for mastering workflows.
+Response Requirements:
+1. Identify the core task activity from the user data.
+2. Recommend the 'Recommended Tool' as the primaryTool.
+3. Recommend the 'Other Tools' as alternativeTools.
+4. Explain why it fits using the exact format: "Since you are [Detail], use [Tool] to [Use Case]."
+5. Provide a useful Pro Tip for that tool.
+6. Mention the "AI Literacy Academy" in the 'nextStep' field only.
 `;
 
   let lastError = null;
   for (let i = 0; i < 2; i++) {
     try {
       const response = await ai.models.generateContent({
-        model: "gemini-2.0-flash-exp",
+        model: "gemini-3-flash-preview",
         contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
         config: {
           systemInstruction: systemInstruction,
+          thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
+          temperature: 0,
           responseMimeType: "application/json",
         },
       });
@@ -74,16 +83,16 @@ INSTRUCTIONS:
   
   // High quality fallback for old clients or server failure
   return res.json({
-    primaryTool: "AI Literacy Academy",
-    whyItFits: "Because you are looking for a reliable way to master AI, the Academy is your best starting point.",
+    primaryTool: "ChatGPT",
+    whyItFits: "Since you are looking for a powerful all-rounder to improve your workflow, ChatGPT is the best starting point.",
     bestUsedFor: [
-      "Learning AI foundations",
-      "Monetizing AI tools",
-      "Workflow automation"
+      "Generating high-quality text and ideas",
+      "Explaining complex concepts clearly",
+      "Drafting professional communications"
     ],
-    alternativeTools: ["ChatGPT", "Serlzo"],
-    comparisonStrategy: "The Academy teaches you how to use all these tools together.",
-    betterResultsTip: "Master the foundations before choosing specific niche tools.",
-    nextStep: "Join the Academy to master these workflows."
+    alternativeTools: ["Claude", "Perplexity"],
+    comparisonStrategy: "ChatGPT is the best generalist, while Claude excels at long-form creative writing.",
+    betterResultsTip: "Be specific in your prompts to get the best out of LLMs.",
+    nextStep: "Join the AI Literacy Academy to master these foundation tools."
   });
 }

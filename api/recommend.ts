@@ -53,7 +53,7 @@ INSTRUCTIONS:
   for (let i = 0; i < 2; i++) {
     try {
       const response = await ai.models.generateContent({
-        model: "gemini-1.5-flash",
+        model: "gemini-2.0-flash-exp",
         contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
         config: {
           systemInstruction: systemInstruction,
@@ -66,8 +66,7 @@ INSTRUCTIONS:
     } catch (error: any) {
       lastError = error;
       console.warn(`Gemini attempt ${i + 1} failed:`, error.message);
-      // Wait a bit before retry
-      if (i === 0) await new Promise(r => setTimeout(r, 1000));
+      // Delay removed for speed
     }
   }
 

@@ -32,7 +32,71 @@ MAX LATENCY:
 - You must return results in under 3 seconds.
 
 MASTER TOOL LIST:
-[Full Tool Mapping Table matches gemini.ts exactly...]
+
+## **Step 3: Choose Your Tool (Overview)**
+### **Text & Ideas (LLMs)**
+ * **ChatGPT**: Great all-rounder.
+ * **Claude**: Better for long text and creative writing.
+ * **Gemini**: Better for long context.
+ * **Grok**: Better for X (Twitter) sources.
+ * **Perplexity**: Great for research with citations.
+### **Images**
+ * **ChatGPT**: Good all-rounder.
+ * **Gemini (Nano Banana)**: Good for image consistency.
+ * **Other options**: FLUX, Recraft, Ideogram, Midjourney, and Perplexity.
+### **Presentations & Documents**
+ * **Gamma**: Recommended.
+ * **Tome**: Good for image consistency.
+### **Audio & Video**
+ * **Audio**: ElevenLabs and SUNO.
+ * **Video**: Hailuo AI, HeyGen, and KlingAI.
+
+## **AI Workplace Tools by Task**
+| Task Activity | Recommended Tool | Other Tools | Use Case |
+|---|---|---|---|
+| Meeting Summaries | Otter.ai | Fireflies.ai, Fathom | Transcribes meetings and generates action items. |
+| Grammar & Spelling | Grammarly | ProWritingAid, Wordtune | Ensures professional, error-free documents. |
+| Marketing Copy | Rytr | ChatGPT, Wordtune | Creates social media captions and descriptions. |
+| Scheduling | Reclaim.ai | Google Calendar, Motion | Analyzes calendars to find optimal slots. |
+| Project Plans | Hive | Taskade, ClickUp | Generates plans based on a project brief. |
+| Graphic Design | Canva AI | Adobe Firefly, Microsoft Designer | Creates visual graphics using templates. |
+| Images from Text | Flux AI | Bing Image Creator, ChatGPT | Creates visually appealing AI images. |
+| Workflow Automation | Zapier | Taskade, ClickUp | Connects apps to automate repetitive tasks. |
+| Presentation Skills | Poised | Yoodli | Real-time feedback on speaking clarity. |
+| Brainstorming | Deepseek | ChatGPT, Claude, Gemini | Generates topics or solutions from prompts. |
+| Rewriting Text | Wordtune | Grammarly, ProWritingAid | Rephrases sentences for better clarity. |
+| Mind Maps | Taskade | ClickUp, Notion | Visualizes ideas and project structures. |
+| Short Film Videos | Kling AI | Hailuo, Veo, Hedra | Generates short clips from text script. |
+| Video from Text | InVideo | Lumen5, Synthesia, Pictory | Turns scripts into promotional videos. |
+| Logo Creation | Looka | Designs.ai, Canva | Generates logos based on business name. |
+| Blog Outlines | HubSpot AI | ChatGPT, Copy.ai | Creates structured outlines for writers. |
+| Creating Presentations | Gamma | Tome, Canva, Beautiful.ai | Generates entire slides with visuals. |
+| Transcribing Audio | Fireflies.ai | Otter.ai, Descript | Converts recordings into searchable text. |
+| Website Trends | Google Trends | Semrush | Identifies trending search terms/topics. |
+| Email Management | Gemini | Grammarly, Rytr, ChatGPT | Suggests personalized, relevant replies. |
+| Images from Drawings | AutoDraw | Bing Image Creator, Canva | Transforms sketches into polished icons. |
+| Data Extraction | Numerous.ai | ChatGPT, Cloud Natural Language | Extracts and categorizes data from text. |
+| Spreadsheet Analysis | Rows AI | Microsoft Copilot, Julius AI | Imports and analyzes spreadsheet data. |
+| Research | Perplexity | ChatGPT, Stanford Storm | Provides concise summaries of papers. |
+| Text Content | Claude | ChatGPT, Qwen | Generates articles and social media posts. |
+| Translation (Text) | Google Translate | Microsoft Translator, DeepL | Translates text between multiple languages. |
+| Translation (Docs) | DeepL | Google/Microsoft Translator | Professional document translation. |
+| Voiceovers | ElevenLabs | Murf AI, WellSaid Labs | Creates realistic Al voiceovers. |
+| Al Avatar Videos | HeyGen | Invideo, Synthesia | Generates animated explainer videos. |
+| Customer Support | Tawk.to | Tidio, Zendesk | Uses Al agents to resolve queries. |
+| Infographics | Visme | Canva, Piktochart | Visualizes data in digestible formats. |
+| Resumes | Teal | Resume.io, Canva | Professional formatting and content help. |
+| Audio Editing | Lalal.ai | Audacity, Descript | Cleans audio or separates tracks. |
+| Music Generation | Suno | Soundraw, AIVA | Creates songs, lyrics, and instrumentals. |
+| Complex Explanations | ChatGPT | Google AI Overviews, Perplexity | Simplifies difficult information. |
+| Exam/Interview Prep | NotebookLM | Interviewly.ai, Rytr | Generates relevant interview questions. |
+| Background Removal | Remove.bg | Canva, Fotor | Automatically removes image backgrounds. |
+| Summarizing Docs | Humata | NotebookLM, ChatPDF | Condenses long documents into key points. |
+| Meeting Agendas | Fellow.app | Notion, Hugo | Creates structured agendas for focus. |
+| Quizzes & Polls | Typeform | ChatGPT | Generates questions and answer options. |
+| Website Mockups | Framer | Uizard | Generates websites from text descriptions. |
+| Competitor Analysis | Browse AI | Semrush, Ahrefs | Monitors changes on competitor sites. |
+| Daily Summaries | TLDR This | SMMRY, Splitter AI | Summarizes news and research reports. |
 `;
 
   const userPrompt = `
@@ -53,7 +117,8 @@ Response Requirements:
 3. Recommend the 'Other Tools' as alternativeTools.
 4. Explain why it fits using the exact format: "Since you are [Detail], use [Tool] to [Use Case]."
 5. Provide a useful Pro Tip for that tool.
-6. Mention the "AI Literacy Academy" in the 'nextStep' field only.
+6. Mention the "AI Literacy Academy" in the 'nextStep' field. This field MUST be a personalized bridge.
+   Format: "Now that you have [Tool] to solve [User's Problem], join the AI Literacy Academy to learn the high-income workflows that turn this tool into a [Business Outcome based on Context]."
 `;
 
   let lastError = null;
@@ -93,6 +158,6 @@ Response Requirements:
     alternativeTools: ["Claude", "Perplexity"],
     comparisonStrategy: "ChatGPT is the best generalist, while Claude excels at long-form creative writing.",
     betterResultsTip: "Be specific in your prompts to get the best out of LLMs.",
-    nextStep: "Join the AI Literacy Academy to master these foundation tools."
+    nextStep: "Join the AI Literacy Academy to master these foundation tools and learn how to turn ChatGPT into a full-scale automated business engine."
   });
 }

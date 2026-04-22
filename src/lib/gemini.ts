@@ -114,7 +114,8 @@ Response Requirements:
 3. Recommend the 'Other Tools' as alternativeTools.
 4. Explain why it fits using the exact format: "Since you are [Detail], use [Tool] to [Use Case]."
 5. Provide a useful Pro Tip for that tool.
-6. Mention the "AI Literacy Academy" in the 'nextStep' field only.`;
+6. Mention the "AI Literacy Academy" in the 'nextStep' field. This field MUST be a personalized bridge.
+   Format: "Now that you have [Tool] to solve [User's Problem], join the AI Literacy Academy to learn the high-income workflows that turn this tool into a [Business Outcome based on Context]."`;
 
   let lastError = null;
   for (let i = 0; i < 2; i++) {
@@ -172,6 +173,6 @@ Response Requirements:
     alternativeTools: ["Claude", "Gemini", "Perplexity"],
     comparisonStrategy: "ChatGPT is the general-purpose leader, while Claude is better for longer text and creative nuances.",
     betterResultsTip: "Use clear, descriptive prompts to get the best responses from LLMs.",
-    nextStep: "Join the AI Literacy Academy to master these foundation tools for your business."
+    nextStep: "Join the AI Literacy Academy to master these foundation tools and learn how to turn ChatGPT into a full-scale automated business engine."
   };
 }

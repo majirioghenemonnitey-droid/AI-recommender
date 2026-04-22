@@ -676,9 +676,20 @@ ${recommendation.nextStep}`;
                 </motion.div>
               </div>
               
-              <h1 className="text-3xl sm:text-4xl font-bold text-nexus-navy mb-4 tracking-tight leading-tight text-center font-display">
-                Your Custom <span className="text-nexus-cobalt italic font-serif">AI Strategy</span>
+              <h1 className="text-3xl sm:text-4xl font-black text-nexus-navy mb-4 tracking-tight leading-tight text-center font-display">
+                Your Custom <span className="text-nexus-cobalt italic font-nexus">AI Strategy</span>
               </h1>
+              
+              <div className="flex flex-col items-center mb-10">
+                <div className="inline-flex flex-wrap justify-center gap-2 max-w-lg">
+                  <span className="px-3 py-1 rounded-full bg-nexus-silver/50 text-nexus-navy text-xs font-bold border border-nexus-silver">
+                    Target: {role}
+                  </span>
+                  <span className="px-3 py-1 rounded-full bg-nexus-silver/50 text-nexus-navy text-xs font-bold border border-nexus-silver">
+                    Task: {mainNeed}
+                  </span>
+                </div>
+              </div>
 
               {!recommendation && (
                 <div className="text-center py-12">

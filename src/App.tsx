@@ -248,8 +248,10 @@ export default function App() {
       console.error("Process Error:", error);
       
       // Better error message for the user based on their feedback
-      if (currentStep === 'lead') {
-        setError("Something went wrong with the AI generation. Don't worry, your details are already saved—check back soon or check your email/WhatsApp for your strategy!");
+      if (error.message && error.message.includes("vetted resources")) {
+        setError("We couldn't find a 100% verified tool for your specific need in our strictly vetted database. We prioritize precise matches over generic guesses to ensure you get only the best solutions.");
+      } else if (currentStep === 'lead') {
+        setError("Something went wrong with the AI generation. Your details are saved—check your email or WhatsApp soon for your verified strategy!");
       } else {
         setError(error.message || "Something went wrong. Please try again.");
       }

@@ -21,20 +21,21 @@ SOURCE ADHERENCE:
 - BE METICULOUS about your selection.
 
 INTENT-TO-OUTPUT MAPPING RULE:
-1. Identify the user's primary INTENT (e.g., "Ideas", "Text", "Images", "Video", "Analysis").
-2. Match that intent to the corresponding CATEGORY in the Master Tool List below.
-3. If they need "Ideas" or "Brainstorming", select from the "Text & Ideas" group (like Deepseek or ChatGPT).
-4. If they need "Text Content" or "Creative Writing", select Claude or ChatGPT.
-5. If they need "Visuals" or "Graphics", select from the "Images" group.
-6. Clinical Precision: Every word of the customer's request must map to your decision. Do not recommend a video tool for a text problem.
+1. Identify the user's primary INTENT based on their exact words (e.g., "Ideas" vs "Text", "Plan" vs "Execute").
+2. Match that intent to the corresponding CATEGORY in the Master Tool List.
+3. IDEAS/BRAINSTORMING INTENT: If they need ideas, topics, or solutions, recommend the tools from the "Brainstorming" task row. While Deepseek is the primary recommendation, **Claude** and **ChatGPT** are also powerful for ideas. You MUST explain the tool's value in terms of "Generating Ideas" if that is what the user asked for.
+4. WRITING/TEXT CONTENT INTENT: If they need articles, social media posts, or creative writing, recommend **Claude** or **Rytr**.
+5. VISUALS/GRAPHICS INTENT: Select from the "Images" group.
+6. Clinical Precision: Every word of the customer's request must map to your decision. If they ask for ideas, give them an idea tool. If they ask for writing, give them a writing tool.
 
 Matching Rule: Identify the user's core task (e.g., "too many meetings," "need a logo," "analyzing data") and map it to the "Best (Recommended) Tool".
 
 STRICT COMMAND:
-- The "primaryTool" MUST be a software tool from the Master Tool List below.
-- You are FORBIDDEN from recommending "AI Literacy Academy" as the "primaryTool". It MUST only appear in the "nextStep" field.
-- If the user's task is not explicitly in the list, choose the closest professional software tool FROM THE LIST (ChatGPT, Claude, or Perplexity).
-- NEVER hallucinate a tool name that is not in the list.
+- PRIORITY 1: If the user's task matches one of the "Task Activity" descriptions in the Master Tool List below, you MUST select that exact "Recommended Tool".
+- PRIORITY 2 (Deep Reasoning Fallback): If the specialized list below does NOT have a perfect match for the user's context, you MUST REASON DEEPLY to identify the best possible AI tool from your global knowledge. In this case, you are allowed to recommend any high-quality, verified AI software tool that solves the problem perfectly.
+- You are FORBIDDEN from recommending a general LLM (ChatGPT, Claude, Gemini) as a simple fallback if a more specialized tool exists for the task.
+- Explain your reasoning meticulously, showing how you arrived at the recommendation based on every word of the user's request.
+- NEVER hallucinate a tool name. Every tool must be a real, accessible software product.
 
 MAX LATENCY REQUIREMENT:
 - Results must be returned in under 3 seconds.
@@ -42,24 +43,19 @@ MAX LATENCY REQUIREMENT:
 MASTER TOOL LIST:
 
 ## **Step 3: Choose Your Tool (Overview)**
-### **Text & Ideas (LLMs)**
- * **ChatGPT**: Great all-rounder.
- * **Claude**: Better for long text and creative writing.
- * **Gemini**: Better for long context.
- * **Grok**: Better for X (Twitter) sources.
- * **Perplexity**: Great for research with citations.
+### **Text & Ideas**
+ * **Deepseek**: Best for Brainstorming & Ideas.
+ * **Claude**: Best for long text and creative writing.
+ * **Gemini**: Better for Google Workspace integration.
 ### **Images**
- * **ChatGPT**: Good all-rounder.
- * **Gemini (Nano Banana)**: Good for image consistency.
- * **Other options**: FLUX, Recraft, Ideogram, Midjourney, and Perplexity.
-### **Presentations & Documents**
- * **Gamma**: Recommended.
- * **Tome**: Good for image consistency.
-### **Audio & Video**
- * **Audio**: ElevenLabs and SUNO.
- * **Video**: Hailuo AI, HeyGen, and KlingAI.
+ * **Flux AI**: Best for high-quality images.
+ * **Canva AI**: Best for graphic design.
+### **Business & Productivity**
+ * **Serlzo**: AI-powered WhatsApp & Email Automation.
+ * **Fellow.app**: Best for Client Communication & Project Updates.
+ * **Zapier**: Best for Workflow Automation.
 
-## **AI Workplace Tools by Task**
+## **AI Workplace Tools (Hardened Mapping)**
 | Task Activity | Recommended Tool | Other Tools | Use Case |
 |---|---|---|---|
 | **Meeting Summaries** | Otter.ai | Fireflies.ai, Fathom | Transcribes meetings and generates action items. |
@@ -69,7 +65,7 @@ MASTER TOOL LIST:
 | **Project Plans** | Hive | Taskade, ClickUp | Generates plans based on a project brief. |
 | **Graphic Design** | Canva AI | Adobe Firefly, Microsoft Designer | Creates visual graphics using templates. |
 | **Images from Text** | Flux AI | Bing Image Creator, ChatGPT | Creates visually appealing AI images. |
-| **Workflow Automation** | Zapier | Taskade, ClickUp | Connects apps to automate repetitive tasks. |
+| **Workflow Automation** | Zapier | Taskade, ClickUp | Connects apps to automate repetitive business tasks. |
 | **Presentation Skills** | Poised | Yoodli | Real-time feedback on speaking clarity. |
 | **Brainstorming** | Deepseek | ChatGPT, Claude, Gemini | Generates topics or solutions from prompts. |
 | **Rewriting Text** | Wordtune | Grammarly, ProWritingAid | Rephrases sentences for better clarity. |
@@ -82,6 +78,7 @@ MASTER TOOL LIST:
 | **Transcribing Audio** | Fireflies.ai | Otter.ai, Descript | Converts recordings into searchable text. |
 | **Website Trends** | Google Trends | Semrush | Identifies trending search terms/topics. |
 | **Email Management** | Gemini | Grammarly, Rytr, ChatGPT | Suggests personalized, relevant replies. |
+| **WhatsApp & Email Marketing** | Serlzo | Zapier, HubSpot AI | AI-powered sales and marketing automation for WhatsApp and Email. |
 | **Images from Drawings** | AutoDraw | Bing Image Creator, Canva | Transforms sketches into polished icons. |
 | **Data Extraction** | Numerous.ai | ChatGPT, Cloud Natural Language | Extracts and categorizes data from text. |
 | **Spreadsheet Analysis** | Rows AI | Microsoft Copilot, Julius AI | Imports and analyzes spreadsheet data. |
@@ -100,6 +97,7 @@ MASTER TOOL LIST:
 | **Exam/Interview Prep** | NotebookLM | Interviewly.ai, Rytr | Generates relevant interview questions. |
 | **Background Removal** | Remove.bg | Canva, Fotor | Automatically removes image backgrounds. |
 | **Summarizing Docs** | Humata | NotebookLM, ChatPDF | Condenses long documents into key points. |
+| **Client Updates & Comm.** | Fellow.app | Hive, Taskade | automates structured project updates and streamlines client communication. |
 | **Meeting Agendas** | Fellow.app | Notion, Hugo | Creates structured agendas for focus. |
 | **Quizzes & Polls** | Typeform | ChatGPT | Generates questions and answer options. |
 | **Website Mockups** | Framer | Uizard | Generates websites from text descriptions. |
@@ -132,58 +130,36 @@ Response Requirements:
   for (let i = 0; i < 2; i++) {
     try {
       const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "gemini-1.5-flash",
         contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
         config: {
-          systemInstruction,
-          thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
+          systemInstruction: systemInstruction,
           temperature: 0,
           responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              primaryTool: { type: Type.STRING },
-              whyItFits: { type: Type.STRING },
-              bestUsedFor: { 
-                type: Type.ARRAY,
-                items: { type: Type.STRING }
-              },
-              alternativeTools: {
-                type: Type.ARRAY,
-                items: { type: Type.STRING }
-              },
-              comparisonStrategy: { type: Type.STRING },
-              betterResultsTip: { type: Type.STRING },
-              nextStep: { type: Type.STRING }
-            },
-            required: ["primaryTool", "whyItFits", "bestUsedFor", "alternativeTools", "comparisonStrategy", "betterResultsTip", "nextStep"]
-          }
-        }
+        },
       });
 
       return JSON.parse(response.text || "{}");
     } catch (error: any) {
       lastError = error;
       console.warn(`Gemini attempt ${i + 1} failed:`, error.message);
-      // Removed 1000ms delay for maximum speed
     }
   }
 
   console.error("Gemini Final Error:", lastError);
   
-  // FINAL FALLBACK: If AI is completely down, return a high-quality default strategy
-  // This ensures the user NEVER sees an error screen.
+  // INTELLIGENT FALLBACK: If the AI call fails after retries, we use a reliable LLM as a safety net.
   return {
     primaryTool: "ChatGPT",
-    whyItFits: "Since you are looking for a versatile way to integrate AI into your workflow, ChatGPT is the best all-around tool to start with.",
+    whyItFits: "Since we encountered a technical interruption while finding your perfect match, we recommend starting with ChatGPT—the world's most versatile all-rounder—to tackle your specific challenge immediately.",
     bestUsedFor: [
-      "Generating ideas and creative writing",
-      "Analyzing complex problems and providing explanations",
-      "Automating basic text-based tasks"
+      "Quick brainstorming and idea generation",
+      "Drafting professional content and emails",
+      "Analyzing complex problems with deep reasoning"
     ],
-    alternativeTools: ["Claude", "Gemini", "Perplexity"],
-    comparisonStrategy: "ChatGPT is the general-purpose leader, while Claude is better for longer text and creative nuances.",
-    betterResultsTip: "Use clear, descriptive prompts to get the best responses from LLMs.",
-    nextStep: "Join the AI Literacy Academy to master these foundation tools and learn how to turn ChatGPT into a full-scale automated business engine."
+    alternativeTools: ["Claude", "Perplexity"],
+    comparisonStrategy: "ChatGPT is the industry standard for general reasoning, while specialized tools (when available) offer more integrated professional workflows.",
+    betterResultsTip: "Ask the AI to 'act as an expert' in your specific field for much higher quality results.",
+    nextStep: "Join the AI Literacy Academy to master foundational LLMs and discover the deep reasoning workflows that turn these tools into business engines."
   };
 }

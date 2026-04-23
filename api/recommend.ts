@@ -33,8 +33,8 @@ INTENT-TO-OUTPUT MAPPING RULE:
 Matching Rule: Identify the user's core task (e.g., "too many meetings," "need a logo," "analyzing data") and map it to the "Best (Recommended) Tool".
 
 STRICT COMMAND:
-- PRIORITY 1: If the user's task matches one of the "Task Activity" descriptions in the Master Tool List below, you MUST select that exact "Recommended Tool".
-- PRIORITY 2 (Deep Reasoning Fallback): If the specialized list below does NOT have a perfect match for the user's context, you MUST REASON DEEPLY to identify the best possible AI tool from your global knowledge. In this case, you are allowed to recommend any high-quality, verified AI software tool that solves the problem perfectly.
+- PRIORITY 1: If the user's "Problem" (${data.mainNeed}) matches any string in the "Task Activity (User Selection)" column of the Hardened Mapping below, you MUST recommend that exact tool. This is a NON-NEGOTIABLE command.
+- PRIORITY 2: If no exact string match exists, use Deep Reasoning to find the best tool.
 - You are FORBIDDEN from recommending a general LLM (ChatGPT, Claude, Gemini) as a simple fallback if a more specialized tool exists for the task.
 - Explain your reasoning meticulously, showing how you arrived at the recommendation based on every word of the user's request.
 - NEVER hallucinate a tool name. Every tool must be a real, accessible software product.
@@ -57,54 +57,33 @@ MASTER TOOL LIST:
  * **Fellow.app**: Best for Client Communication & Project Updates.
  * **Zapier**: Best for Workflow Automation.
 
-## **AI Workplace Tools (Hardened Mapping)**
-| Task Activity | Recommended Tool | Other Tools | Use Case |
+## **AI Workplace Tools (Hardened Mapping - EXACT STRINGS)**
+| Task Activity (User Selection) | Recommended Tool | Other Tools | Use Case |
 |---|---|---|---|
-| **Meeting Summaries** | Otter.ai | Fireflies.ai, Fathom | Transcribes meetings and generates action items. |
-| **Grammar & Spelling** | Grammarly | ProWritingAid, Wordtune | Ensures professional, error-free documents. |
-| **Marketing Copy** | Rytr | ChatGPT, Wordtune | Creates social media captions and descriptions. |
-| **Scheduling** | Reclaim.ai | Google Calendar, Motion | Analyzes calendars to find optimal meeting slots. |
-| **Project Plans** | Hive | Taskade, ClickUp | Generates plans based on a project brief. |
-| **Graphic Design** | Canva AI | Adobe Firefly, Microsoft Designer | Creates visual graphics using templates. |
-| **Images from Text** | Flux AI | Bing Image Creator, ChatGPT | Creates visually appealing AI images. |
-| **Workflow Automation** | Zapier | Taskade, ClickUp | Connects apps to automate repetitive business tasks. |
-| **Presentation Skills** | Poised | Yoodli | Real-time feedback on speaking clarity. |
-| **Brainstorming** | Deepseek | ChatGPT, Claude, Gemini | Generates topics or solutions from prompts. |
-| **Rewriting Text** | Wordtune | Grammarly, ProWritingAid | Rephrases sentences for better clarity. |
-| **Mind Maps** | Taskade | ClickUp, Notion | Visualizes ideas and project structures. |
-| **Short Film Videos** | Kling AI | Hailuo, Veo, Hedra | Generates short clips from text prompts. |
-| **Video from Text** | InVideo | Lumen5, Synthesia, Pictory | Turns scripts into promotional videos. |
-| **Logo Creation** | Looka | Designs.ai, Canva | Generates logos based on business name. |
-| **Blog Outlines** | HubSpot AI | ChatGPT, Copy.ai | Creates structured outlines for writers. |
-| **Creating Presentations** | Gamma | Tome, Canva, Beautiful.ai | Generates entire slides with visuals. |
-| **Transcribing Audio** | Fireflies.ai | Otter.ai, Descript | Converts recordings into searchable text. |
-| **Website Trends** | Google Trends | Semrush | Identifies trending search terms/topics. |
-| **Email Management** | Gemini | Grammarly, Rytr, ChatGPT | Suggests personalized, relevant replies. |
-| **WhatsApp & Email Marketing** | Serlzo | Zapier, HubSpot AI | AI-powered sales and marketing automation for WhatsApp and Email. |
-| **Images from Drawings** | AutoDraw | Bing Image Creator, Canva | Transforms sketches into polished icons. |
-| **Data Extraction** | Numerous.ai | ChatGPT, Cloud Natural Language | Extracts and categorizes data from text. |
-| **Spreadsheet Analysis** | Rows AI | Microsoft Copilot, Julius AI | Imports and analyzes spreadsheet data. |
+| **I'm overwhelmed by customer DMs and repetitive support questions** | Tawk.to | Tidio, Zendesk | Uses Al agents to resolve queries and handle support. |
+| **Manual operations and admin tasks are eating up my entire day** | Zapier | Taskade, ClickUp | Connects apps to automate repetitive business tasks. |
+| **I need a system to automatically generate and follow up with leads** | Serlzo | Zapier, HubSpot AI | AI-powered sales and marketing automation for WhatsApp and Email. |
+| **I struggle to consistently create marketing content that actually sells** | Rytr | ChatGPT, Wordtune | Creates social media captions and descriptions. |
+| **I need to analyze my business data but don't have the time or skills** | Rows AI | Numerous.ai, Julius AI | Imports and analyzes business spreadsheet data. |
+| **I spend half my day in meetings and writing follow-up notes** | Otter.ai | Fireflies.ai, Fathom | Transcribes meetings and generates action items. |
+| **My inbox is overflowing and drafting professional emails takes too long** | Gemini | Grammarly, Rytr, ChatGPT | Suggests personalized, relevant replies. |
+| **I waste hours building slide decks and formatting reports** | Gamma | Tome, Canva, Beautiful.ai | Generates entire slides with visuals. |
+| **I'm stuck doing manual data entry and spreadsheet analysis** | Rows AI | Microsoft Copilot, Julius AI | Imports and analyzes spreadsheet data. |
+| **I have to read massive documents and need to summarize them instantly** | Humata | NotebookLM, ChatPDF | Condenses long documents into key points. |
+| **Writing custom proposals and pitching clients takes up my billable hours** | Claude | ChatGPT, Qwen | Generates high-quality articles and creative writing. |
+| **Managing client communication and project updates is exhausting** | Fellow.app | Hive, Taskade | automates structured project updates and streamlines client communication. |
+| **I'm bogged down by contracts, invoicing, and back-office admin** | Hive | Taskade, ClickUp | Generates plans and manages business overhead. |
+| **I need to speed up my actual client work without dropping quality** | ChatGPT | Claude, Deepseek | Uses advanced reasoning to accelerate production workflows. |
+| **I don't have time to market myself to get a steady stream of new clients** | Serlzo | HubSpot AI, Copy.ai | Automates lead outreach and marketing updates. |
+| **I constantly run out of fresh ideas and scripts for my content** | Deepseek | ChatGPT, Gemini | Generates topics or solutions from prompts. |
+| **Editing videos, audio, or photos takes me way too long** | InVideo | HeyGen, Murf AI | Turns scripts into promotional videos. |
+| **Writing engaging captions, blogs, or product descriptions is a struggle** | Rytr | Copy.ai, Jasper | Creates social media captions and descriptions. |
+| **I need to turn one piece of content into dozens of posts automatically** | Zapier | Repurpose.io | Connects apps to automate content distribution. |
+| **I can't keep up with replying to comments and engaging with my audience** | Tawk.to | Tidio, Reply.io | Uses Al agents to automate relationship building. |
+| **I want to save 2+ hours every day by automating my manual tasks** | Zapier | Reclaim.ai | Connects apps to automate repetitive business tasks. |
+| **Brainstorming** | Deepseek | ChatGPT, Claude | Generates topics or solutions from prompts. |
 | **Research** | Perplexity | ChatGPT, Stanford Storm | Provides concise summaries of papers. |
-| **Text Content** | Claude | ChatGPT, Qwen | Generates articles and social media posts. |
-| **Translation (Text)** | Google Translate | Microsoft Translator, DeepL | Translates text between multiple languages. |
-| **Translation (Docs)** | DeepL | Google/Microsoft Translator | Professional document translation. |
-| **Voiceovers** | ElevenLabs | Murf AI, WellSaid Labs | Creates realistic Al voiceovers. |
-| **Al Avatar Videos** | HeyGen | Invideo, Synthesia | Generates animated explainer videos. |
-| **Customer Support** | Tawk.to | Tidio, Zendesk | Uses Al agents to resolve queries. |
-| **Infographics** | Visme | Canva, Piktochart | Visualizes data in digestible formats. |
-| **Resumes** | Teal | Resume.io, Canva | Professional formatting and content help. |
-| **Audio Editing** | Lalal.ai | Audacity, Descript | Cleans audio or separates tracks. |
-| **Music Generation** | Suno | Soundraw, AIVA | Creates songs, lyrics, and instrumentals. |
-| **Complex Explanations** | ChatGPT | Google AI Overviews, Perplexity | Simplifies difficult information. |
-| **Exam/Interview Prep** | NotebookLM | Interviewly.ai, Rytr | Generates relevant interview questions. |
-| **Background Removal** | Remove.bg | Canva, Fotor | Automatically removes image backgrounds. |
-| **Summarizing Docs** | Humata | NotebookLM, ChatPDF | Condenses long documents into key points. |
-| **Client Updates & Comm.** | Fellow.app | Hive, Taskade | automates structured project updates and streamlines client communication. |
 | **Meeting Agendas** | Fellow.app | Notion, Hugo | Creates structured agendas for focus. |
-| **Quizzes & Polls** | Typeform | ChatGPT | Generates questions and answer options. |
-| **Website Mockups** | Framer | Uizard | Generates websites from text descriptions. |
-| **Competitor Analysis** | Browse AI | Semrush, Ahrefs | Monitors changes on competitor sites. |
-| **Daily Summaries** | TLDR This | SMMRY, Splitter AI | Summarizes news and research reports. |
 `;
 
   const userPrompt = `

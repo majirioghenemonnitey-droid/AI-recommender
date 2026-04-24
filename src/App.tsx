@@ -322,15 +322,15 @@ export default function App() {
   const handleSaveStrategy = async () => {
     if (!recommendation) return;
     
-    const textToSave = `My AI Strategy from AI Literacy Academy
+    const textToSave = `My AI Strategy
 ---------------------------------------
 Primary Tool: ${recommendation.primaryTool}
 Why it fits: ${recommendation.whyItFits}
 
 Best Used For:
-${recommendation.bestUsedFor.map(item => `- ${item}`).join('\n')}
+${recommendation.bestUsedFor?.map(item => `- ${item}`).join('\n') || ''}
 
-Alternatives: ${recommendation.alternativeTools.join(', ')}
+Alternatives: ${recommendation.alternativeTools?.join(', ') || 'None'}
 
 Comparison Strategy: 
 ${recommendation.comparisonStrategy}
@@ -734,7 +734,7 @@ ${recommendation.nextStep}`;
                         <Sparkles className="w-5 h-5 text-nexus-cobalt" /> Best Used For
                       </h3>
                       <ul className="space-y-3">
-                        {recommendation.bestUsedFor.map((item, idx) => (
+                        {recommendation.bestUsedFor?.map((item, idx) => (
                           <li key={idx} className="flex items-start gap-3 text-gray-700">
                             <div className="w-6 h-6 rounded-full bg-nexus-silver/30 flex items-center justify-center flex-shrink-0 mt-0.5">
                               <CheckCircle2 className="w-4 h-4 text-nexus-cobalt" />
@@ -751,7 +751,7 @@ ${recommendation.nextStep}`;
                           <BrainCircuit className="w-4 h-4 text-gray-500" /> Alternatives
                         </h3>
                         <div className="flex flex-wrap gap-2 mb-6">
-                          {recommendation.alternativeTools.map((tool, idx) => (
+                          {recommendation.alternativeTools?.map((tool, idx) => (
                             <a 
                               key={idx}
                               href={getToolUrl(tool)}
@@ -796,7 +796,7 @@ ${recommendation.nextStep}`;
                     <span className="text-transparent bg-clip-text bg-gradient-to-r from-nexus-cobalt to-cyan-400">Start Getting Results.</span>
                   </h2>
                   <p className="text-nexus-silver/80 text-lg sm:text-xl leading-relaxed mb-10 max-w-2xl mx-auto font-medium">
-                    Knowing which tool to use is just the start. The real secret is knowing <strong className="text-white">how</strong> to use it to get your work done in half the time. Join the <strong className="text-white">AI Literacy Academy</strong> and get the exact steps to win back your day.
+                    Knowing which tool to use is just the start. The real secret is knowing <strong className="text-white">how</strong> to use it to get your work done in half the time. Join the <strong className="text-white">AI Academy</strong> and get the exact steps to win back your day.
                   </p>
                   
                   <div className="flex flex-col items-center gap-4 w-full max-w-md mx-auto">
@@ -855,7 +855,7 @@ ${recommendation.nextStep}`;
             className="flex flex-col items-center sm:items-end group text-center sm:text-right"
           >
             <div className="flex items-center gap-1 text-sm font-bold text-nexus-cobalt group-hover:text-nexus-navy transition-colors">
-              Join AI Literacy Academy <ChevronRight className="w-4 h-4" />
+              Join AI Academy <ChevronRight className="w-4 h-4" />
             </div>
             <span className="text-xs text-gray-500 mt-0.5">Learn how to use AI to save hours</span>
           </a>
@@ -879,7 +879,7 @@ ${recommendation.nextStep}`;
           <div className="text-nexus-silver text-[10px] font-bold tracking-widest uppercase opacity-50 mb-1">
             System Identity: V2.1.0-STABLE
           </div>
-          <p className="text-gray-400 text-xs">AI Literacy Academy &copy; 2026. All strategies are AI-curated.</p>
+
         </footer>
         
       </div>

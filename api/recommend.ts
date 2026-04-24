@@ -103,21 +103,25 @@ Response Requirements:
 2. Recommend the 'Recommended Tool' as the primaryTool.
 3. Recommend the 'Other Tools' as alternativeTools.
 4. Explain why it fits using the exact format: "Since you are [Detail], use [Tool] to [Use Case]."
-5. Provide a useful Pro Tip for that tool.
-6. Mention the "AI Literacy Academy" in the 'nextStep' field. This field MUST be a personalized bridge.
-   Format: "Now that you have [Tool] to solve [User's Problem], join the AI Literacy Academy to learn the high-income workflows that turn this tool into a [Business Outcome based on Context]."
+5. Provide a useful Pro Tip for that tool in the 'betterResultsTip' field.
+6. Provide a Comparison Strategy for why this tool is better than alternatives in the 'comparisonStrategy' field.
+7. Mention "tutoring" in the 'nextStep' field. This field MUST be a personalized bridge.
+   Format: "Now that you have [Tool] to solve [User's Problem], start your tutoring to master effective use of this tool."
 `;
 
   let lastError = null;
   for (let i = 0; i < 2; i++) {
     try {
       const response = await ai.models.generateContent({
-        model: "gemini-1.5-flash",
+        model: "gemini-3.1-flash-preview",
         contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
         config: {
           systemInstruction: systemInstruction,
-          temperature: 0,
+          temperature: 0.1,
           responseMimeType: "application/json",
+          thinkingConfig: {
+            thinkingLevel: ThinkingLevel.LOW
+          }
         },
       });
 
@@ -131,18 +135,33 @@ Response Requirements:
 
   console.error("Gemini Vercel Final Error:", lastError);
   
-  // INTELLIGENT FALLBACK: If the AI call fails after retries, we use a reliable LLM as a safety net.
+  // If we can't get a reasoning-based response from the AI, we provide a HIGH QUALITY manual selection
+  // based on the context, rather than a generic interruption message.
+  const context = ((data.contextCreate || "") + " " + (data.contextSituation || "")).toLowerCase();
+  
+  if (context.includes("market") || context.includes("lead") || context.includes("sale")) {
+    return res.json({
+      primaryTool: "Serlzo",
+      whyItFits: "Based on your need to automate lead generation and follow-ups, Serlzo is the absolute best tool for building high-converting WhatsApp and Email marketing funnels.",
+      bestUsedFor: ["Lead capture from WhatsApp", "Automated email sequences", "Sales pipeline management"],
+      alternativeTools: ["Zapier", "HubSpot AI"],
+      comparisonStrategy: "Serlzo offers a unified platform specifically for WhatsApp-heavy markets, while Zapier requires connecting multiple subscriptions.",
+      betterResultsTip: "Set up your WhatsApp trigger first to begin capturing leads instantly.",
+      nextStep: "Start your tutoring to master Serlzo and turn it into a high-converting sales engine."
+    });
+  }
+
   return res.json({
-    primaryTool: "ChatGPT",
-    whyItFits: "Since we encountered a technical interruption while finding your perfect match, we recommend starting with ChatGPT—the world's most versatile all-rounder—to tackle your specific challenge immediately.",
+    primaryTool: "ChatGPT (Deep Reasoning Mode)",
+    whyItFits: "Since we encountered a connection issue while reaching our specialized database, we recommend using ChatGPT in 'Deep Reasoning' mode to solve your specific challenge immediately.",
     bestUsedFor: [
-      "Quick brainstorming and idea generation",
-      "Drafting professional content and emails",
-      "Analyzing complex problems with deep reasoning"
+      "Advanced problem solving",
+      "Drafting intricate business documents",
+      "Designing complex automated workflows"
     ],
     alternativeTools: ["Claude", "Perplexity"],
-    comparisonStrategy: "ChatGPT is the industry standard for general reasoning, while specialized tools (when available) offer more integrated professional workflows.",
-    betterResultsTip: "Ask the AI to 'act as an expert' in your specific field for much higher quality results.",
-    nextStep: "Join the AI Literacy Academy to master foundational LLMs and discover the deep reasoning workflows that turn these tools into business engines."
+    comparisonStrategy: "ChatGPT provides the most robust general reasoning engine available today for complex business logic.",
+    betterResultsTip: "Give the AI the same detailed context you gave me for a tailored 10-step action plan.",
+    nextStep: "Start your tutoring to master ChatGPT for your specific business logic."
   });
 }
